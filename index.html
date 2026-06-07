@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouterForge NOC — Gerador de Configuração MikroTik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#0a0e14;
+  --surface:#0f1520;
+  --panel:#141d2b;
+  --panel2:#192234;
+  --border:#1e2d42;
+  --border2:#253448;
+  --accent:#00e676;
+  --accent2:#00b8d9;
+  --accent3:#ff6d00;
+  --text:#c8d8e8;
+  --text2:#7a9ab8;
+  --text3:#3a5a78;
+  --danger:#ff4444;
+  --warn:#ffaa00;
+  --mono:'Share Tech Mono',monospace;
+  --head:'Rajdhani',sans-serif;
+}
+
+body{
+  font-family:var(--head);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:0;
+  overflow-x:hidden;
+}
+
+/* scanline effect */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,230,118,0.012) 2px,rgba(0,230,118,0.012) 4px);
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* --- LAYOUT --- */
+.shell{display:grid;grid-template-columns:200px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  padding:0;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+}
+
+.logo-block{
+  padding:20px 16px 16px;
+  border-bottom:1px solid var(--border);
+}
+
+.logo-title{
+  font-family:var(--head);
+  font-size:20px;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+.logo-sub{
+  font-size:10px;
+  color:var(--text3);
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-top:2px;
+  font-family:var(--mono);
+}
+
+.nav-section{
+  padding:14px 0 4px;
+}
+
+.nav-label{
+  font-size:9px;
+  letter-spacing:3px;
+  color:var(--text3);
+  padding:0 16px 6px;
+  text-transform:uppercase;
+  font-family:var(--mono);
+}
+
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 16px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--text2);
+  cursor:pointer;
+  transition:all .15s;
+  border-left:2px solid transparent;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+
+.nav-item:hover{color:var(--text);background:var(--panel);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,230,118,.05);}
+
+.nav-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--text3);flex-shrink:0;
+}
+.nav-item.active .nav-dot{background:var(--accent);}
+
+/* status bar na sidebar */
+.sidebar-status{
+  margin-top:auto;
+  padding:12px 16px;
+  border-top:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--text3);
+}
+.status-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.status-ok{color:var(--accent);}
+.status-warn{color:var(--warn);}
+
+/* MAIN */
+.main{
+  background:var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+
+/* top bar */
+.topbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:12px 24px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.stat-pill{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:8px 16px;
+  font-family:var(--mono);
+  font-size:11px;
+  flex:1;
+  min-width:130px;
+}
+
+.stat-label{color:var(--text3);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.stat-val{color:var(--accent);font-size:15px;font-weight:700;}
+.stat-val.blue{color:var(--accent2);}
+.stat-val.orange{color:var(--accent3);}
+.stat-val.gray{color:var(--text2);}
+
+/* content area */
+.content{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  flex:1;
+}
+
+.form-area{
+  padding:20px;
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+}
+
+.preview-area{
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+}
+
+/* SECTION CARDS */
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:6px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+
+.card-header{
+  background:var(--panel2);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+.card-header .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 6px var(--accent);
+  flex-shrink:0;
+}
+.card-header .dot.blue{background:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+.card-header .dot.orange{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+.card-header .dot.gray{background:var(--text3);box-shadow:none;}
+
+.card-body{padding:14px;}
+
+/* FORM ELEMENTS */
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.row.full{grid-template-columns:1fr;}
+.row.triple{grid-template-columns:1fr 1fr 1fr;}
+
+.field{display:flex;flex-direction:column;gap:4px;}
+
+label{
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--text3);
+  font-family:var(--mono);
+}
+
+input[type=text],input[type=number],input[type=password],select,textarea{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:3px;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:12px;
+  padding:8px 10px;
+  width:100%;
+  transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;
+  appearance:none;
+  outline:none;
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(0,230,118,.12);
+}
+
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300e676'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  padding-right:28px;
+  cursor:pointer;
+}
+
+select option{background:#141d2b;color:var(--text);}
+
+input::placeholder{color:var(--text3);}
+
+.hint{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+
+/* conditional sub-panels */
+.sub-panel{
+  background:rgba(0,230,118,.03);
+  border:1px solid rgba(0,230,118,.12);
+  border-left:3px solid var(--accent);
+  border-radius:3px;
+  padding:12px;
+  margin-top:10px;
+  display:none;
+}
+.sub-panel.blue{border-left-color:var(--accent2);background:rgba(0,184,217,.03);}
+.sub-panel.orange{border-left-color:var(--accent3);background:rgba(255,109,0,.03);}
+.sub-panel.show{display:block;}
+
+.sub-panel-label{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--text2);font-family:var(--mono);margin-bottom:8px;
+}
+
+/* checkbox */
+.check-row{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 0;
+}
+input[type=checkbox]{
+  width:14px;height:14px;
+  accent-color:var(--accent);
+  cursor:pointer;
+}
+.check-row label{
+  font-size:12px;letter-spacing:.5px;text-transform:none;
+  color:var(--text);font-family:var(--head);font-weight:500;
+  cursor:pointer;margin:0;
+}
+
+/* BUTTONS */
+.btn-row{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:8px;
+  margin-top:4px;
+}
+
+.btn{
+  border:none;border-radius:3px;
+  font-family:var(--head);font-weight:700;
+  font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:11px 12px;
+  cursor:pointer;
+  transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+
+.btn-primary{
+  background:var(--accent);color:#000;
+}
+.btn-primary:hover{background:#00ff84;box-shadow:0 0 12px rgba(0,230,118,.4);}
+.btn-primary:active{transform:scale(.98);}
+
+.btn-dl{
+  background:var(--panel2);color:var(--text2);
+  border:1px solid var(--border2);
+  font-size:11px;
+}
+.btn-dl:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-dl:disabled{opacity:.35;cursor:not-allowed;}
+
+.btn-add{
+  background:transparent;color:var(--text3);
+  border:1px dashed var(--border2);
+  font-size:11px;width:100%;margin-top:8px;
+  padding:8px;
+}
+.btn-add:hover{border-color:var(--accent);color:var(--accent);}
+
+.btn-remove{
+  background:transparent;color:var(--danger);
+  border:1px solid rgba(255,68,68,.3);
+  padding:4px 8px;font-size:10px;
+  margin-left:auto;
+}
+.btn-remove:hover{background:rgba(255,68,68,.1);}
+
+/* PREVIEW AREA */
+.preview-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;
+}
+.preview-title{
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--text3);font-family:var(--mono);
+}
+.preview-led{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--text3);margin-left:auto;
+}
+.preview-led.on{
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+.code-box{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:14px;
+  flex:1;
+  font-family:var(--mono);
+  font-size:11px;
+  color:#4fc3f7;
+  line-height:1.7;
+  overflow-y:auto;
+  white-space:pre;
+  resize:none;
+  min-height:300px;
+  max-height:calc(100vh - 280px);
+}
+.code-box:focus{outline:none;border-color:var(--accent2);}
+
+.copy-bar{
+  display:flex;gap:8px;margin-top:10px;
+}
+.btn-copy{
+  background:rgba(0,184,217,.15);
+  border:1px solid rgba(0,184,217,.3);
+  color:var(--accent2);
+  font-family:var(--mono);font-size:11px;
+  padding:8px 14px;border-radius:3px;
+  cursor:pointer;transition:all .15s;
+  flex:1;
+}
+.btn-copy:hover{background:rgba(0,184,217,.25);}
+
+/* validation error */
+.err{
+  background:rgba(255,68,68,.08);
+  border:1px solid rgba(255,68,68,.3);
+  border-left:3px solid var(--danger);
+  border-radius:3px;
+  padding:8px 12px;
+  font-size:11px;font-family:var(--mono);
+  color:#ff8a80;
+  margin-bottom:10px;
+  display:none;
+}
+.err.show{display:block;}
+
+/* badge */
+.badge{
+  font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  font-family:var(--mono);padding:2px 7px;border-radius:2px;
+  background:rgba(0,230,118,.1);color:var(--accent);
+  border:1px solid rgba(0,230,118,.2);
+}
+.badge.blue{background:rgba(0,184,217,.1);color:var(--accent2);border-color:rgba(0,184,217,.2);}
+.badge.orange{background:rgba(255,109,0,.1);color:var(--accent3);border-color:rgba(255,109,0,.2);}
+
+/* section toggle */
+.section-hidden{display:none;}
+
+/* responsive */
+@media(max-width:1024px){
+  .content{grid-template-columns:1fr;}
+  .form-area{border-right:none;border-bottom:1px solid var(--border);}
+  .code-box{max-height:300px;}
+}
+@media(max-width:700px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{height:auto;position:relative;flex-direction:row;flex-wrap:wrap;}
+  .nav-section{display:none;}
+  .topbar{padding:10px;}
+  .btn-row{grid-template-columns:1fr 1fr;}
+  .row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-block">
+      <div class="logo-title">RouterForge</div>
+      <div class="logo-sub">NOC Platform</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Módulos</div>
+      <div class="nav-item active"><span class="nav-dot"></span>Dashboard</div>
+      <div class="nav-item"><span class="nav-dot"></span>WAN Principal</div>
+      <div class="nav-item"><span class="nav-dot"></span>Backup 1</div>
+      <div class="nav-item"><span class="nav-dot"></span>Backup 2</div>
+      <div class="nav-item"><span class="nav-dot"></span>LAN</div>
+      <div class="nav-item"><span class="nav-dot"></span>QoS</div>
+      <div class="nav-item"><span class="nav-dot"></span>Firewall</div>
+      <div class="nav-item"><span class="nav-dot"></span>Gerar Config</div>
+    </div>
+
+    <div class="sidebar-status">
+      <div class="status-row"><span>Engine</span><span class="status-ok">ONLINE</span></div>
+      <div class="status-row"><span>RouterOS</span><span class="status-ok">v7 Ready</span></div>
+      <div class="status-row"><span>Failover</span><span class="status-ok">Ativado</span></div>
+      <div class="status-row"><span>QoS</span><span class="status-warn">Opcional</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="stat-pill">
+        <div class="stat-label">WAN Links</div>
+        <div class="stat-val" id="stat-links">2</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">Failover</div>
+        <div class="stat-val blue">Ativado</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">QoS</div>
+        <div class="stat-val orange" id="stat-qos">Opcional</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">RouterOS</div>
+        <div class="stat-val gray">v7 Ready</div>
+      </div>
+    </div>
+
+    <!-- CONTENT GRID -->
+    <div class="content">
+
+      <!-- FORM SIDE -->
+      <div class="form-area">
+
+        <div id="err-box" class="err"></div>
+
+        <!-- Identificação -->
+        <div class="card">
+          <div class="card-header"><span class="dot gray"></span>Identificação do Sistema</div>
+          <div class="card-body">
+            <div class="row full">
+              <div class="field">
+                <label>Nome / Hostname</label>
+                <input type="text" id="identificacao" placeholder="EMPRESA-MATRIZ" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Link Principal -->
+        <div class="card">
+          <div class="card-header">
+            <span class="dot"></span>Link Principal
+            <span class="badge" style="margin-left:auto;">WAN-1</span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field">
+                <label>Interface</label>
+                <select id="interface_principal" required>
+                  <option value="">-- Selecione --</option>
+                  <optgroup label="Ethernet">
+                    <option>ether1</option><option>ether2</option><option>ether3</option>
+                    <option>ether4</option><option>ether5</option><option>ether6</option>
+                    <option>ether7</option><option>ether8</option>
+                  </optgroup>
+                  <optgroup label="SFP">
+                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
+                    <option>sfp1</option><option>sfp2</option>
+                  </optgroup>
+                  <optgroup label="Wireless">
+                    <option>wlan1</option><option>wlan2</option>
+                  </optgroup>
+                  <optgroup label="LTE / Modem">
+                    <option>lte1</option><option>lte2</option>
+                  </optgroup>
+                  <optgroup label="Bridge / VLAN base">
+                    <option>bridge1</option><option>bridge2</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="interface_principal_custom" placeholder="ex: ether9" class="section-hidden" style="margin-top:4px;">
+              </div>
+              <div class="field">
+                <label>Tipo de Conexão</label>
+                <select id="tipo_principal" required>
+                  <option value="">-- Selecione --</option>
+                  <option value="pppoe">PPPoE</option>
+                  <option value="dhcp">DHCP Client</option>
+                  <option value="static">IP Fixo (Static)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>VLAN ID (opcional)</label>
+                <input type="number" id="vlan_principal" placeholder="100" min="1" max="4094">
+              </div>
+              <div class="field">
+                <label>IP de Monitoramento</label>
+                <select id="ip_monitor_principal_sel" onchange="onMonitorChange('principal',this.value)">
+                  <option value="">-- Selecione --</option>
+                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
+                  <option value="8.8.8.8">8.8.8.8 — Google</option>
+                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
+                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
+                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
+                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
+                  <option value="__custom__">Digitar manualmente...</option>
+                </select>
+                <input type="text" id="ip_monitor_principal" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;" required>
+                <div class="hint">Netwatch usa este host para detectar queda</div>
+              </div>
+            </div>
+            <div class="row full">
+              <div class="field">
+                <label>Operadora</label>
+                <select id="operadora_principal_sel" onchange="onOperadoraChange('principal',this.value)">
+                  <option value="">-- Selecione a operadora --</option>
+                  <optgroup label="Telecom">
+                    <option value="VIVO">VIVO</option>
+                    <option value="CLARO">CLARO</option>
+                    <option value="TIM">TIM</option>
+                    <option value="OI">OI</option>
+                    <option value="NET">NET</option>
+                    <option value="SKY">SKY</option>
+                  </optgroup>
+                  <optgroup label="ISP Regional">
+                    <option value="BRISANET">BRISANET</option>
+                    <option value="UNIFIQUE">UNIFIQUE</option>
+                    <option value="ALARES">ALARES</option>
+                    <option value="DESKTOP">DESKTOP</option>
+                    <option value="VOGEL">VOGEL</option>
+                  </optgroup>
+                  <optgroup label="Corporativo">
+                    <option value="EMBRATEL">EMBRATEL</option>
+                    <option value="TELEMAR">TELEMAR</option>
+                    <option value="AMERICANET">AMERICANET</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="operadora_principal" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;" required>
+              </div>
+            </div>
+            <!-- PPPoE fields -->
+            <div id="pppoe_principal_fields" class="sub-panel">
+              <div class="sub-panel-label">Credenciais PPPoE</div>
+              <div class="row">
+                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_principal" placeholder="usuario@provedor.com"></div>
+                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_principal" placeholder="•••••••"></div>
+              </div>
+            </div>
+            <!-- Static fields -->
+            <div id="static_principal_fields" class="sub-panel blue">
+              <div class="sub-panel-label">Endereçamento Estático</div>
+              <div class="row">
+                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_principal" placeholder="200.200.1.10/30"></div>
+                <div class="field"><label>Gateway</label><input type="text" id="gateway_principal" placeholder="200.200.1.9"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Link Backup-1 -->
+        <div class="card">
+          <div class="card-header">
+            <span class="dot blue"></span>Link Backup-1
+            <span class="badge blue" style="margin-left:auto;">WAN-2</span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field">
+                <label>Interface</label>
+                <select id="interface_backup1" required>
+                  <option value="">-- Selecione --</option>
+                  <optgroup label="Ethernet">
+                    <option>ether1</option><option>ether2</option><option>ether3</option>
+                    <option>ether4</option><option>ether5</option><option>ether6</option>
+                    <option>ether7</option><option>ether8</option>
+                  </optgroup>
+                  <optgroup label="SFP">
+                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
+                    <option>sfp1</option><option>sfp2</option>
+                  </optgroup>
+                  <optgroup label="Wireless">
+                    <option>wlan1</option><option>wlan2</option>
+                  </optgroup>
+                  <optgroup label="LTE / Modem">
+                    <option>lte1</option><option>lte2</option>
+                  </optgroup>
+                  <optgroup label="Bridge / VLAN base">
+                    <option>bridge1</option><option>bridge2</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="interface_backup1_custom" placeholder="ex: lte1" class="section-hidden" style="margin-top:4px;">
+              </div>
+              <div class="field">
+                <label>Tipo de Conexão</label>
+                <select id="tipo_backup1" required>
+                  <option value="">-- Selecione --</option>
+                  <option value="pppoe">PPPoE</option>
+                  <option value="dhcp">DHCP Client</option>
+                  <option value="static">IP Fixo (Static)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>VLAN ID (opcional)</label>
+                <input type="number" id="vlan_backup1" placeholder="200" min="1" max="4094">
+              </div>
+              <div class="field">
+                <label>IP de Monitoramento</label>
+                <select id="ip_monitor_backup1_sel" onchange="onMonitorChange('backup1',this.value)">
+                  <option value="">-- Selecione --</option>
+                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
+                  <option value="8.8.8.8">8.8.8.8 — Google</option>
+                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
+                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
+                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
+                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
+                  <option value="__custom__">Digitar manualmente...</option>
+                </select>
+                <input type="text" id="ip_monitor_backup1" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;" required>
+              </div>
+            </div>
+            <div class="row full">
+              <div class="field">
+                <label>Operadora</label>
+                <select id="operadora_backup1_sel" onchange="onOperadoraChange('backup1',this.value)">
+                  <option value="">-- Selecione a operadora --</option>
+                  <optgroup label="Telecom">
+                    <option value="VIVO">VIVO</option>
+                    <option value="CLARO">CLARO</option>
+                    <option value="TIM">TIM</option>
+                    <option value="OI">OI</option>
+                    <option value="NET">NET</option>
+                    <option value="SKY">SKY</option>
+                  </optgroup>
+                  <optgroup label="ISP Regional">
+                    <option value="BRISANET">BRISANET</option>
+                    <option value="UNIFIQUE">UNIFIQUE</option>
+                    <option value="ALARES">ALARES</option>
+                    <option value="DESKTOP">DESKTOP</option>
+                    <option value="VOGEL">VOGEL</option>
+                  </optgroup>
+                  <optgroup label="Corporativo">
+                    <option value="EMBRATEL">EMBRATEL</option>
+                    <option value="TELEMAR">TELEMAR</option>
+                    <option value="AMERICANET">AMERICANET</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="operadora_backup1" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;" required>
+              </div>
+            </div>
+            <div id="pppoe_backup1_fields" class="sub-panel">
+              <div class="sub-panel-label">Credenciais PPPoE</div>
+              <div class="row">
+                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_backup1" placeholder="usuario@provedor.com"></div>
+                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_backup1" placeholder="•••••••"></div>
+              </div>
+            </div>
+            <div id="static_backup1_fields" class="sub-panel blue">
+              <div class="sub-panel-label">Endereçamento Estático</div>
+              <div class="row">
+                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_backup1" placeholder="10.0.0.10/30"></div>
+                <div class="field"><label>Gateway</label><input type="text" id="gateway_backup1" placeholder="10.0.0.9"></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-add" id="btn_add_backup2" onclick="adicionarBackup2()">+ Adicionar Link Backup-2</button>
+          </div>
+        </div>
+
+        <!-- Link Backup-2 (dinâmico) -->
+        <div class="card section-hidden" id="backup2_section">
+          <div class="card-header">
+            <span class="dot orange"></span>Link Backup-2
+            <span class="badge orange" style="margin-left:auto;">WAN-3</span>
+            <button class="btn btn-remove" onclick="removerBackup2()">✕ Remover</button>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field">
+                <label>Interface</label>
+                <select id="interface_backup2">
+                  <option value="">-- Selecione --</option>
+                  <optgroup label="Ethernet">
+                    <option>ether1</option><option>ether2</option><option>ether3</option>
+                    <option>ether4</option><option>ether5</option><option>ether6</option>
+                    <option>ether7</option><option>ether8</option>
+                  </optgroup>
+                  <optgroup label="SFP">
+                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
+                    <option>sfp1</option><option>sfp2</option>
+                  </optgroup>
+                  <optgroup label="Wireless">
+                    <option>wlan1</option><option>wlan2</option>
+                  </optgroup>
+                  <optgroup label="LTE / Modem">
+                    <option>lte1</option><option>lte2</option>
+                  </optgroup>
+                  <optgroup label="Bridge / VLAN base">
+                    <option>bridge1</option><option>bridge2</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="interface_backup2_custom" placeholder="ex: wlan2" class="section-hidden" style="margin-top:4px;">
+              </div>
+              <div class="field">
+                <label>Tipo de Conexão</label>
+                <select id="tipo_backup2">
+                  <option value="">-- Selecione --</option>
+                  <option value="pppoe">PPPoE</option>
+                  <option value="dhcp">DHCP Client</option>
+                  <option value="static">IP Fixo (Static)</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>VLAN ID (opcional)</label>
+                <input type="number" id="vlan_backup2" placeholder="300" min="1" max="4094">
+              </div>
+              <div class="field">
+                <label>IP de Monitoramento</label>
+                <select id="ip_monitor_backup2_sel" onchange="onMonitorChange('backup2',this.value)">
+                  <option value="">-- Selecione --</option>
+                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
+                  <option value="8.8.8.8">8.8.8.8 — Google</option>
+                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
+                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
+                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
+                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
+                  <option value="__custom__">Digitar manualmente...</option>
+                </select>
+                <input type="text" id="ip_monitor_backup2" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;">
+              </div>
+            </div>
+            <div class="row full">
+              <div class="field">
+                <label>Operadora</label>
+                <select id="operadora_backup2_sel" onchange="onOperadoraChange('backup2',this.value)">
+                  <option value="">-- Selecione a operadora --</option>
+                  <optgroup label="Telecom">
+                    <option value="VIVO">VIVO</option>
+                    <option value="CLARO">CLARO</option>
+                    <option value="TIM">TIM</option>
+                    <option value="OI">OI</option>
+                    <option value="NET">NET</option>
+                    <option value="SKY">SKY</option>
+                  </optgroup>
+                  <optgroup label="ISP Regional">
+                    <option value="BRISANET">BRISANET</option>
+                    <option value="UNIFIQUE">UNIFIQUE</option>
+                    <option value="ALARES">ALARES</option>
+                    <option value="DESKTOP">DESKTOP</option>
+                    <option value="VOGEL">VOGEL</option>
+                  </optgroup>
+                  <optgroup label="Corporativo">
+                    <option value="EMBRATEL">EMBRATEL</option>
+                    <option value="TELEMAR">TELEMAR</option>
+                    <option value="AMERICANET">AMERICANET</option>
+                  </optgroup>
+                  <optgroup label="Outro">
+                    <option value="__custom__">Digitar manualmente...</option>
+                  </optgroup>
+                </select>
+                <input type="text" id="operadora_backup2" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;">
+              </div>
+            </div>
+            <div id="pppoe_backup2_fields" class="sub-panel">
+              <div class="sub-panel-label">Credenciais PPPoE</div>
+              <div class="row">
+                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_backup2" placeholder="usuario@provedor.com"></div>
+                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_backup2" placeholder="•••••••"></div>
+              </div>
+            </div>
+            <div id="static_backup2_fields" class="sub-panel blue">
+              <div class="sub-panel-label">Endereçamento Estático</div>
+              <div class="row">
+                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_backup2" placeholder="172.16.0.10/30"></div>
+                <div class="field"><label>Gateway</label><input type="text" id="gateway_backup2" placeholder="172.16.0.9"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAN -->
+        <div class="card">
+          <div class="card-header"><span class="dot gray"></span>Rede Interna (LAN)</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="field">
+                <label>Rede LAN (CIDR)</label>
+                <input type="text" id="rede_lan" placeholder="192.168.10.0/23" value="192.168.10.0/23" required>
+                <div class="hint">Gateway e DHCP calculados automaticamente</div>
+              </div>
+              <div class="field">
+                <label>Interface(s) LAN</label>
+                <input type="text" id="interfaces_lan" placeholder="ether4 ou ether3,ether4,ether5">
+                <div class="hint">Múltiplas: separar por vírgula</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QoS -->
+        <div class="card">
+          <div class="card-header"><span class="dot orange"></span>QoS — Controle de Banda</div>
+          <div class="card-body">
+            <div class="check-row">
+              <input type="checkbox" id="habilitar_qos">
+              <label for="habilitar_qos">Configurar controle de banda geral (Simple Queue)</label>
+            </div>
+            <div id="qos_fields" class="sub-panel orange">
+              <div class="sub-panel-label">Parâmetros de Banda</div>
+              <div class="row">
+                <div class="field">
+                  <label>Download máx (Mbps)</label>
+                  <input type="number" id="velocidade_down" placeholder="100" value="20">
+                </div>
+                <div class="field">
+                  <label>Upload máx (Mbps)</label>
+                  <input type="number" id="velocidade_up" placeholder="100" value="20">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="gerarConfig()">&#9654; Gerar Configuração</button>
+          <button class="btn btn-dl" id="btn_rsc" disabled onclick="downloadConfig('rsc')">⬇ .RSC</button>
+          <button class="btn btn-dl" id="btn_txt" disabled onclick="downloadConfig('txt')">⬇ .TXT</button>
+          <button class="btn btn-dl" id="btn_clear" onclick="limpar()">⟳ Reset</button>
+        </div>
+
+      </div><!-- /form-area -->
+
+      <!-- PREVIEW SIDE -->
+      <div class="preview-area">
+        <div class="preview-header">
+          <span class="preview-title">Preview RouterOS Script</span>
+          <span id="preview-led" class="preview-led"></span>
+        </div>
+        <textarea id="configOutput" class="code-box" readonly># RouterForge NOC
+# Aguardando dados do formulario...
+# Preencha os campos e clique em [ Gerar Configuracao ]
+</textarea>
+        <div class="copy-bar">
+          <button class="btn-copy" onclick="copyConfig()">&#128203; Copiar Script</button>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<footer style="background:var(--surface);border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:center;gap:16px;font-family:var(--mono);font-size:11px;color:var(--text3);">
+  <span>Desenvolvido por <span style="color:var(--accent);letter-spacing:1px;">Luciano Veiga</span></span>
+  <span style="color:var(--border2);">|</span>
+  <a href="https://www.linkedin.com/in/lucianoveiga-ti" target="_blank" style="color:var(--accent2);text-decoration:none;letter-spacing:1px;transition:color .15s;" onmouseover="this.style.color='#4fc3f7'" onmouseout="this.style.color='var(--accent2)'">linkedin.com/in/lucianoveiga-ti</a>
+</footer>
+
+<script>
+/* ===== HELPERS ===== */
+function getIface(sufixo){
+  const sel = document.getElementById('interface_'+sufixo);
+  if(sel && sel.value === '__custom__'){
+    return (document.getElementById('interface_'+sufixo+'_custom')?.value || '').trim();
+  }
+  return sel ? sel.value.trim() : '';
+}
+
+function getVal(id){ return (document.getElementById(id)?.value || '').trim(); }
+
+/* ===== OPERADORA TOGGLE ===== */
+function onOperadoraChange(sufixo, val){
+  const inp = document.getElementById('operadora_'+sufixo);
+  if(val==='__custom__'){
+    inp.classList.remove('section-hidden');
+    inp.value='';
+    inp.focus();
+  } else {
+    inp.classList.add('section-hidden');
+    inp.value = val;
+  }
+}
+
+/* ===== IP MONITOR TOGGLE ===== */
+function onMonitorChange(sufixo, val){
+  const inp = document.getElementById('ip_monitor_'+sufixo);
+  if(val==='__custom__'){
+    inp.classList.remove('section-hidden');
+    inp.value='';
+    inp.focus();
+  } else {
+    inp.classList.add('section-hidden');
+    inp.value = val;
+  }
+}
+
+/* ===== INTERFACE CUSTOM TOGGLE ===== */
+['principal','backup1','backup2'].forEach(s=>{
+  const sel = document.getElementById('interface_'+s);
+  if(!sel) return;
+  sel.addEventListener('change',function(){
+    const custom = document.getElementById('interface_'+s+'_custom');
+    if(!custom) return;
+    if(this.value==='__custom__'){
+      custom.classList.remove('section-hidden');
+      custom.focus();
+    } else {
+      custom.classList.add('section-hidden');
+    }
+  });
+});
+
+/* ===== TIPO DE CONEXÃO TOGGLE ===== */
+function onTipoChange(sufixo, val){
+  ['pppoe','static'].forEach(t=>{
+    const el = document.getElementById(t+'_'+sufixo+'_fields');
+    if(el) el.classList.remove('show');
+  });
+  if(val==='pppoe'){
+    document.getElementById('pppoe_'+sufixo+'_fields')?.classList.add('show');
+  } else if(val==='static'){
+    document.getElementById('static_'+sufixo+'_fields')?.classList.add('show');
+  }
+}
+
+['principal','backup1','backup2'].forEach(s=>{
+  const el = document.getElementById('tipo_'+s);
+  if(!el) return;
+  el.addEventListener('change',function(){ onTipoChange(s, this.value); });
+});
+
+/* ===== QoS TOGGLE ===== */
+document.getElementById('habilitar_qos').addEventListener('change',function(){
+  document.getElementById('qos_fields').classList.toggle('show', this.checked);
+  document.getElementById('stat-qos').textContent = this.checked ? 'Ativo' : 'Opcional';
+});
+
+/* ===== BACKUP-2 ===== */
+let backup2Ativo = false;
+function adicionarBackup2(){
+  document.getElementById('backup2_section').classList.remove('section-hidden');
+  document.getElementById('btn_add_backup2').style.display='none';
+  backup2Ativo = true;
+  document.getElementById('stat-links').textContent = '3';
+}
+function removerBackup2(){
+  document.getElementById('backup2_section').classList.add('section-hidden');
+  document.getElementById('btn_add_backup2').style.display='flex';
+  backup2Ativo = false;
+  document.getElementById('stat-links').textContent = '2';
+  document.querySelectorAll('#backup2_section input, #backup2_section select').forEach(f=>f.value='');
+}
+
+/* ===== VALIDAÇÃO ===== */
+function showErr(msg){
+  const b=document.getElementById('err-box');
+  b.textContent='⚠ '+msg; b.classList.add('show');
+  b.scrollIntoView({behavior:'smooth'});
+}
+function clearErr(){
+  document.getElementById('err-box').classList.remove('show');
+}
+
+function validarIPs(){
+  const ipRe = /^(\d{1,3}\.){3}\d{1,3}$/;
+  const cidrRe = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
+  const checks = [
+    ['ip_monitor_principal','IP Monitor Principal'],
+    ['ip_monitor_backup1','IP Monitor Backup-1'],
+  ];
+  if(backup2Ativo) checks.push(['ip_monitor_backup2','IP Monitor Backup-2']);
+  for(const [id,label] of checks){
+    const v = getVal(id);
+    if(v && !ipRe.test(v)) return `${label}: endereço IP inválido (${v})`;
+  }
+  const lan = getVal('rede_lan');
+  if(lan && !cidrRe.test(lan)) return 'Rede LAN: formato inválido. Use CIDR ex: 192.168.1.0/24';
+  return null;
+}
+
+function validarInterfaces(){
+  const p = getIface('principal');
+  const b1 = getIface('backup1');
+  const b2 = backup2Ativo ? getIface('backup2') : '';
+  const lanStr = getVal('interfaces_lan');
+  const lanList = lanStr ? lanStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
+
+  if(!p) return 'Selecione a interface do Link Principal';
+  if(!b1) return 'Selecione a interface do Link Backup-1';
+  if(backup2Ativo && !b2) return 'Selecione a interface do Link Backup-2';
+
+  const wanList = [p, b1];
+  if(b2) wanList.push(b2);
+  const dupes = wanList.filter((v,i)=>wanList.indexOf(v)!==i);
+  if(dupes.length) return `Interface "${dupes[0]}" está duplicada entre os links WAN`;
+
+  const conflito = wanList.find(w=>lanList.includes(w));
+  if(conflito) return `Interface "${conflito}" foi usada em WAN e LAN ao mesmo tempo`;
+
+  return null;
+}
+
+/* ===== CALCULAR LAN ===== */
+function calcLAN(rede){
+  try{
+    const [ip,mask] = rede.split('/');
+    const bits = parseInt(mask);
+    const parts = ip.split('.').map(Number);
+    const gw = [...parts]; gw[3]=1;
+    const hosts = Math.pow(2, 32-bits)-2;
+    const rangeStart = [...parts]; rangeStart[3]=10;
+    const rangeEnd = [...parts]; rangeEnd[3]=Math.min(hosts+parts[3]-1, 254);
+    return {
+      gw: gw.join('.'),
+      mask: bits,
+      rangeStart: rangeStart.join('.'),
+      rangeEnd: rangeEnd.join('.'),
+      pool: rede
+    };
+  }catch(e){ return {gw:'192.168.10.1',mask:23,rangeStart:'192.168.10.10',rangeEnd:'192.168.11.254',pool:rede}; }
+}
+
+/* ===== COLETA DADOS LINK ===== */
+function coletarLink(s){
+  return {
+    interface: getIface(s),
+    tipo: getVal('tipo_'+s),
+    vlan: getVal('vlan_'+s),
+    ipMonitor: getVal('ip_monitor_'+s),
+    operadora: getVal('operadora_'+s),
+    usuario: getVal('usuario_pppoe_'+s),
+    senha: getVal('senha_pppoe_'+s),
+    ip: getVal('ip_'+s),
+    gateway: getVal('gateway_'+s),
+  };
+}
+
+/* ===== GERAR VLANS ===== */
+function gerarVlans(links){
+  let c='';
+  const hdr = '/interface vlan';
+  let first = true;
+  links.forEach(({dados,nome})=>{
+    if(dados.vlan){
+      if(first){ c+=hdr; first=false; }
+      c+=`\nadd interface=${dados.interface} name=${dados.interface}.${dados.vlan} vlan-id=${dados.vlan} comment="VLAN-${dados.operadora.toUpperCase()}-${nome}"`;
+    }
+  });
+  return c;
+}
+
+/* ===== GERAR CONFIG LINK ===== */
+function gerarConfigLink(dados, nome, distance){
+  const ifaceReal = dados.vlan ? `${dados.interface}.${dados.vlan}` : dados.interface;
+  const comentario = `${ifaceReal.toUpperCase()}-${dados.operadora.toUpperCase()}-${nome}-${dados.tipo.toUpperCase()}`;
+  let c='';
+  if(dados.tipo==='pppoe'){
+    c+=`\n/ppp profile\nadd change-tcp-mss=yes name=${nome} on-down="/ip route remove [find comment=\\"MONITOR-${nome}\\"]" on-up="/ip route add dst=${dados.ipMonitor} gateway=\\$\\"remote-address\\" scope=10 comment=MONITOR-${nome}\\r"`;
+    c+=`\n/interface pppoe-client\nadd allow=chap,mschap1,mschap2 disabled=no interface=${ifaceReal} name=pppoe-${dados.operadora} password=${dados.senha} profile=${nome} user=${dados.usuario} comment="${comentario}"`;
+  } else if(dados.tipo==='dhcp'){
+    c+=`\n/ip dhcp-client\nadd add-default-route=no interface=${ifaceReal} script="{\\r\\\n    \\n    :if (\\$bound=1) do={\\r\\\n    \\n  /ip route add dst=${dados.ipMonitor} gateway=\\$\\"gateway-address\\" scope=10 comment=MONITOR-${nome}\\r\\\n    \\n    } else={\\r\\\n    \\n  /ip route remove [find comment=\\"MONITOR-${nome}\\"]\\r\\\n    \\n    }\\r\\\n    \\n}\\r\\\n    \\n" comment="${comentario}"`;
+  } else if(dados.tipo==='static'){
+    c+=`\n/ip address\nadd address=${dados.ip} interface=${ifaceReal} comment="${comentario}"`;
+    c+=`\n/ip route\nadd dst-address=${dados.ipMonitor} gateway=${dados.gateway} scope=10 comment=MONITOR-${nome}`;
+  }
+  return c;
+}
+
+/* ===== GERAR NAT ===== */
+function gerarNAT(links){
+  let c='\n/ip firewall nat';
+  links.forEach(({dados})=>{
+    const iface = dados.tipo==='pppoe' ? `pppoe-${dados.operadora}` : (dados.vlan ? `${dados.interface}.${dados.vlan}` : dados.interface);
+    c+=`\nadd action=masquerade chain=srcnat out-interface=${iface} src-address-list=LAN`;
+  });
+  return c;
+}
+
+/* ===== GERAÇÃO PRINCIPAL ===== */
+function gerarConfig(){
+  clearErr();
+
+  const errIface = validarInterfaces();
+  if(errIface){ showErr(errIface); return; }
+
+  const errIP = validarIPs();
+  if(errIP){ showErr(errIP); return; }
+
+  const id = getVal('identificacao') || 'ROUTER';
+  const lan = calcLAN(getVal('rede_lan') || '192.168.10.0/23');
+  const lanInterfaces = getVal('interfaces_lan');
+
+  const principal = coletarLink('principal');
+  const backup1   = coletarLink('backup1');
+  const backup2   = backup2Ativo ? coletarLink('backup2') : null;
+
+  const links = [{dados:principal,nome:'PRINCIPAL'},{dados:backup1,nome:'BACKUP-1'}];
+  if(backup2) links.push({dados:backup2,nome:'BACKUP-2'});
+
+  let c = `# ============================================================
+# RouterForge NOC — Configuracao Gerada Automaticamente
+# Sistema  : ${id}
+# RouterOS : v7+ | Failover com Netwatch
+# Gerado em: ${new Date().toLocaleString('pt-BR')}
+# ============================================================
+
+/ip firewall address-list
+add address=${lan.pool} list=LAN comment="REDE-LAN-${id}"`;
+
+  // VLANs
+  const vlans = gerarVlans(links);
+  if(vlans) c += '\n'+vlans;
+
+  // Config de cada link
+  links.forEach(({dados,nome},i)=>{ c += gerarConfigLink(dados, nome, i+1); });
+
+  // LAN
+  if(lanInterfaces){
+    const ifaces = lanInterfaces.split(',').map(x=>x.trim()).filter(Boolean);
+    c+=`\n\n/ip address\nadd address=${lan.gw}/${lan.mask} interface=${ifaces[0]} comment="LAN-GATEWAY"`;
+    if(ifaces.length>1){
+      c+=`\n\n/interface bridge\nadd name=bridge-lan comment="BRIDGE-LAN"`;
+      c+=`\n/interface bridge port`;
+      ifaces.forEach(iface=>{ c+=`\nadd bridge=bridge-lan interface=${iface}`; });
+    }
+    c+=`\n\n/ip pool\nadd name=dhcp-pool ranges=${lan.rangeStart}-${lan.rangeEnd} comment="POOL-LAN"`;
+    c+=`\n\n/ip dhcp-server\nadd address-pool=dhcp-pool disabled=no interface=${ifaces.length>1?'bridge-lan':ifaces[0]} lease-time=1d name=dhcp-lan`;
+    c+=`\n\n/ip dhcp-server network\nadd address=${lan.pool} dns-server=1.1.1.1,8.8.8.8 gateway=${lan.gw} comment="NET-LAN"`;
+  }
+
+  // Rotas recursivas
+  c+=`\n\n/ip route\nadd check-gateway=ping comment="ROTA-PRINCIPAL" distance=1 gateway=${principal.ipMonitor} target-scope=11`;
+  c+=`\nadd check-gateway=ping comment="ROTA-BACKUP-1" distance=2 gateway=${backup1.ipMonitor} target-scope=11`;
+  if(backup2) c+=`\nadd check-gateway=ping comment="ROTA-BACKUP-2" distance=3 gateway=${backup2.ipMonitor} target-scope=11`;
+
+  // NAT
+  c += gerarNAT(links);
+
+  // Firewall básico
+  c+=`\n\n/ip firewall filter
+add action=accept chain=input connection-state=established,related,untracked comment="ACEITAR-ESTABELECIDO"
+add action=drop chain=input connection-state=invalid comment="BLOQUEAR-INVALIDO"
+add action=accept chain=input in-interface-list=LAN comment="ACEITAR-LAN"
+add action=drop chain=input comment="BLOQUEAR-RESTO"
+add action=fasttrack-connection chain=forward connection-state=established,related hw-offload=yes comment="FASTTRACK"
+add action=accept chain=forward connection-state=established,related,untracked comment="ACEITAR-FWD-ESTABELECIDO"
+add action=drop chain=forward connection-state=invalid comment="BLOQUEAR-FWD-INVALIDO"`;
+
+  // QoS
+  if(document.getElementById('habilitar_qos').checked){
+    const down = getVal('velocidade_down') || '20';
+    const up = getVal('velocidade_up') || '20';
+    c+=`\n\n/queue simple\nadd max-limit=${up}M/${down}M name=QoS-LAN target=${lan.pool} comment="CONTROLE-BANDA-GERAL"`;
+  }
+
+  // Hardening
+  c+=`\n\n/ip service
+set ftp disabled=yes
+set ssh disabled=yes
+set telnet disabled=yes
+set www disabled=yes
+set winbox address=${lan.pool}
+set api disabled=yes
+set api-ssl disabled=yes
+/system clock
+set time-zone-autodetect=no time-zone-name=America/Sao_Paulo
+/system ntp client
+set enabled=yes servers=a.ntp.br,b.ntp.br
+/system identity
+set name=${id}
+/system logging
+add action=disk topics=critical
+add action=disk topics=error
+add action=disk topics=warning
+/system package update
+set channel=long-term`;
+
+  // Netwatch
+  c+=`\n\n/tool netwatch\nadd down-script=":log error \\"LINK-PRINCIPAL DOWN\\"" host=${principal.ipMonitor} type=simple up-script=":log warning \\"LINK-PRINCIPAL UP\\""`;
+  c+=`\nadd down-script=":log error \\"LINK-BACKUP-1 DOWN\\"" host=${backup1.ipMonitor} type=simple up-script=":log warning \\"LINK-BACKUP-1 UP\\""`;
+  if(backup2) c+=`\nadd down-script=":log error \\"LINK-BACKUP-2 DOWN\\"" host=${backup2.ipMonitor} type=simple up-script=":log warning \\"LINK-BACKUP-2 UP\\""`;
+
+  c+=`\n\n# EOF — RouterForge NOC`;
+
+  document.getElementById('configOutput').value = c;
+  document.getElementById('btn_rsc').disabled = false;
+  document.getElementById('btn_txt').disabled = false;
+  document.getElementById('preview-led').classList.add('on');
+}
+
+/* ===== COPY ===== */
+function copyConfig(){
+  const ta = document.getElementById('configOutput');
+  ta.select();
+  try{
+    document.execCommand('copy');
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent='✓ Copiado!';
+    setTimeout(()=>{ btn.textContent='📋 Copiar Script'; },2000);
+  }catch(e){}
+}
+
+/* ===== DOWNLOAD ===== */
+function downloadConfig(type){
+  const config = document.getElementById('configOutput').value;
+  const id = getVal('identificacao') || 'mikrotik';
+  const ext = type==='rsc' ? 'rsc' : 'txt';
+  const mime = type==='rsc' ? 'application/octet-stream' : 'text/plain';
+  const blob = new Blob([config], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`${id}-failover.${ext}`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ===== RESET ===== */
+function limpar(){
+  document.getElementById('configOutput').value='# RouterForge NOC\n# Aguardando dados do formulario...\n# Preencha os campos e clique em [ Gerar Configuracao ]';
+  document.getElementById('preview-led').classList.remove('on');
+  document.getElementById('btn_rsc').disabled=true;
+  document.getElementById('btn_txt').disabled=true;
+  clearErr();
+}
+</script>
+</body>
+</html>
