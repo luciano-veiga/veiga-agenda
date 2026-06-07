@@ -2,1327 +2,710 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RouterForge NOC — Gerador de Configuração MikroTik</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Veiga Agenda">
+<meta name="theme-color" content="#0a0e14">
+<title>Veiga Agenda</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 :root{
-  --bg:#0a0e14;
-  --surface:#0f1520;
-  --panel:#141d2b;
-  --panel2:#192234;
-  --border:#1e2d42;
-  --border2:#253448;
-  --accent:#00e676;
-  --accent2:#00b8d9;
-  --accent3:#ff6d00;
-  --text:#c8d8e8;
-  --text2:#7a9ab8;
-  --text3:#3a5a78;
-  --danger:#ff4444;
-  --warn:#ffaa00;
-  --mono:'Share Tech Mono',monospace;
-  --head:'Rajdhani',sans-serif;
+  --bg:#0a0e14;--surface:#0f1520;--panel:#141d2b;--panel2:#192234;
+  --border:#1e2d42;--border2:#253448;--accent:#00e676;--accent2:#00b8d9;
+  --accent3:#ff6d00;--danger:#ff4444;--warn:#ffaa00;
+  --text:#c8d8e8;--text2:#7a9ab8;--text3:#3a5a78;
+  --mono:'Share Tech Mono',monospace;--head:'Rajdhani',sans-serif;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--head);background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,230,118,0.01) 2px,rgba(0,230,118,0.01) 4px);pointer-events:none;z-index:9999;}
 
-body{
-  font-family:var(--head);
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  padding:0;
-  overflow-x:hidden;
+/* LOGIN SCREEN */
+.login-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:500;gap:20px;padding:24px;
 }
-
-/* scanline effect */
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,230,118,0.012) 2px,rgba(0,230,118,0.012) 4px);
-  pointer-events:none;
-  z-index:9999;
+.login-screen.hide{display:none;}
+.login-logo{font-size:28px;font-weight:700;color:var(--accent);letter-spacing:3px;text-transform:uppercase;}
+.login-sub{font-size:11px;color:var(--text3);letter-spacing:3px;font-family:var(--mono);}
+.login-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:8px;
+  padding:28px 24px;width:100%;max-width:360px;text-align:center;margin-top:16px;
 }
-
-/* --- LAYOUT --- */
-.shell{display:grid;grid-template-columns:200px 1fr;min-height:100vh;}
-
-/* SIDEBAR */
-.sidebar{
-  background:var(--surface);
-  border-right:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  padding:0;
-  position:sticky;
-  top:0;
-  height:100vh;
-  overflow-y:auto;
+.login-title{font-size:14px;color:var(--text2);font-family:var(--mono);margin-bottom:20px;line-height:1.6;}
+.btn-google{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  background:#fff;color:#222;border:none;border-radius:6px;
+  padding:13px 20px;width:100%;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .15s;font-family:var(--head);letter-spacing:.5px;
 }
+.btn-google:hover{background:#f0f0f0;box-shadow:0 4px 16px rgba(255,255,255,.15);}
+.btn-google:active{transform:scale(.97);}
+.btn-google svg{width:20px;height:20px;flex-shrink:0;}
+.login-note{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:14px;line-height:1.6;}
 
-.logo-block{
-  padding:20px 16px 16px;
-  border-bottom:1px solid var(--border);
+/* LOADING */
+.loading-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:400;gap:12px;
 }
-
-.logo-title{
-  font-family:var(--head);
-  font-size:20px;
-  font-weight:700;
-  color:var(--accent);
-  letter-spacing:2px;
-  text-transform:uppercase;
+.loading-screen.hide{display:none;}
+.spinner{
+  width:32px;height:32px;border:2px solid var(--border2);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;
 }
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:2px;}
 
-.logo-sub{
-  font-size:10px;
-  color:var(--text3);
-  letter-spacing:3px;
-  text-transform:uppercase;
-  margin-top:2px;
-  font-family:var(--mono);
-}
-
-.nav-section{
-  padding:14px 0 4px;
-}
-
-.nav-label{
-  font-size:9px;
-  letter-spacing:3px;
-  color:var(--text3);
-  padding:0 16px 6px;
-  text-transform:uppercase;
-  font-family:var(--mono);
-}
-
-.nav-item{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:9px 16px;
-  font-size:13px;
-  font-weight:500;
-  color:var(--text2);
-  cursor:pointer;
-  transition:all .15s;
-  border-left:2px solid transparent;
-  text-transform:uppercase;
-  letter-spacing:.5px;
-}
-
-.nav-item:hover{color:var(--text);background:var(--panel);}
-.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,230,118,.05);}
-
-.nav-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--text3);flex-shrink:0;
-}
-.nav-item.active .nav-dot{background:var(--accent);}
-
-/* status bar na sidebar */
-.sidebar-status{
-  margin-top:auto;
-  padding:12px 16px;
-  border-top:1px solid var(--border);
-  font-family:var(--mono);
-  font-size:10px;
-  color:var(--text3);
-}
-.status-row{display:flex;justify-content:space-between;margin-bottom:4px;}
-.status-ok{color:var(--accent);}
-.status-warn{color:var(--warn);}
-
-/* MAIN */
-.main{
-  background:var(--bg);
-  display:flex;
-  flex-direction:column;
-}
-
-/* top bar */
+/* TOP BAR */
 .topbar{
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  padding:12px 24px;
-  display:flex;
-  align-items:center;
-  gap:16px;
-  flex-wrap:wrap;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 16px 10px;padding-top:calc(12px + env(safe-area-inset-top,0px));
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
 }
-
-.stat-pill{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:4px;
-  padding:8px 16px;
-  font-family:var(--mono);
-  font-size:11px;
-  flex:1;
-  min-width:130px;
-}
-
-.stat-label{color:var(--text3);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
-.stat-val{color:var(--accent);font-size:15px;font-weight:700;}
-.stat-val.blue{color:var(--accent2);}
-.stat-val.orange{color:var(--accent3);}
-.stat-val.gray{color:var(--text2);}
-
-/* content area */
-.content{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0;
-  flex:1;
-}
-
-.form-area{
-  padding:20px;
-  border-right:1px solid var(--border);
-  overflow-y:auto;
-}
-
-.preview-area{
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-}
-
-/* SECTION CARDS */
-.card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:6px;
-  margin-bottom:14px;
-  overflow:hidden;
-}
-
-.card-header{
-  background:var(--panel2);
-  border-bottom:1px solid var(--border);
-  padding:10px 14px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:12px;
-  font-weight:700;
-  color:var(--accent);
-  letter-spacing:2px;
-  text-transform:uppercase;
-}
-
-.card-header .dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--accent);
-  box-shadow:0 0 6px var(--accent);
-  flex-shrink:0;
-}
-.card-header .dot.blue{background:var(--accent2);box-shadow:0 0 6px var(--accent2);}
-.card-header .dot.orange{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
-.card-header .dot.gray{background:var(--text3);box-shadow:none;}
-
-.card-body{padding:14px;}
-
-/* FORM ELEMENTS */
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-.row.full{grid-template-columns:1fr;}
-.row.triple{grid-template-columns:1fr 1fr 1fr;}
-
-.field{display:flex;flex-direction:column;gap:4px;}
-
-label{
-  font-size:10px;
-  letter-spacing:2px;
-  text-transform:uppercase;
-  color:var(--text3);
-  font-family:var(--mono);
-}
-
-input[type=text],input[type=number],input[type=password],select,textarea{
-  background:var(--surface);
-  border:1px solid var(--border2);
-  border-radius:3px;
-  color:var(--text);
-  font-family:var(--mono);
-  font-size:12px;
-  padding:8px 10px;
-  width:100%;
-  transition:border-color .15s,box-shadow .15s;
-  -webkit-appearance:none;
-  appearance:none;
-  outline:none;
-}
-
-input:focus,select:focus,textarea:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px rgba(0,230,118,.12);
-}
-
-select{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300e676'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right 10px center;
-  padding-right:28px;
-  cursor:pointer;
-}
-
-select option{background:#141d2b;color:var(--text);}
-
-input::placeholder{color:var(--text3);}
-
-.hint{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
-
-/* conditional sub-panels */
-.sub-panel{
-  background:rgba(0,230,118,.03);
-  border:1px solid rgba(0,230,118,.12);
-  border-left:3px solid var(--accent);
-  border-radius:3px;
-  padding:12px;
-  margin-top:10px;
-  display:none;
-}
-.sub-panel.blue{border-left-color:var(--accent2);background:rgba(0,184,217,.03);}
-.sub-panel.orange{border-left-color:var(--accent3);background:rgba(255,109,0,.03);}
-.sub-panel.show{display:block;}
-
-.sub-panel-label{
-  font-size:9px;letter-spacing:3px;text-transform:uppercase;
-  color:var(--text2);font-family:var(--mono);margin-bottom:8px;
-}
-
-/* checkbox */
-.check-row{
-  display:flex;align-items:center;gap:10px;
-  padding:6px 0;
-}
-input[type=checkbox]{
-  width:14px;height:14px;
-  accent-color:var(--accent);
-  cursor:pointer;
-}
-.check-row label{
-  font-size:12px;letter-spacing:.5px;text-transform:none;
-  color:var(--text);font-family:var(--head);font-weight:500;
-  cursor:pointer;margin:0;
-}
-
-/* BUTTONS */
-.btn-row{
-  display:grid;
-  grid-template-columns:2fr 1fr 1fr 1fr;
-  gap:8px;
-  margin-top:4px;
-}
-
-.btn{
-  border:none;border-radius:3px;
-  font-family:var(--head);font-weight:700;
-  font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
-  padding:11px 12px;
-  cursor:pointer;
+.app-title{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+.app-sub{font-size:9px;color:var(--text3);letter-spacing:3px;font-family:var(--mono);margin-top:1px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.clock{font-family:var(--mono);font-size:13px;color:var(--accent2);}
+.date-today{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.user-btn{
+  background:var(--panel);border:1px solid var(--border2);
+  border-radius:20px;padding:5px 10px;
+  font-family:var(--mono);font-size:10px;color:var(--text2);
+  cursor:pointer;display:flex;align-items:center;gap:6px;
   transition:all .15s;
-  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.user-btn:hover{border-color:var(--danger);color:var(--danger);}
+.user-avatar{
+  width:22px;height:22px;border-radius:50%;
+  border:1px solid var(--accent);object-fit:cover;
 }
 
-.btn-primary{
-  background:var(--accent);color:#000;
+/* SYNC INDICATOR */
+.sync-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--text3);
+  transition:all .3s;flex-shrink:0;
 }
-.btn-primary:hover{background:#00ff84;box-shadow:0 0 12px rgba(0,230,118,.4);}
-.btn-primary:active{transform:scale(.98);}
+.sync-dot.syncing{background:var(--warn);box-shadow:0 0 6px var(--warn);animation:pulse 1s ease-in-out infinite;}
+.sync-dot.synced{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
-.btn-dl{
-  background:var(--panel2);color:var(--text2);
-  border:1px solid var(--border2);
-  font-size:11px;
+/* NAV TABS */
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;flex-shrink:0;}
+.tab{
+  flex:1;padding:11px 8px;text-align:center;
+  font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;position:relative;
 }
-.btn-dl:hover{border-color:var(--accent2);color:var(--accent2);}
-.btn-dl:disabled{opacity:.35;cursor:not-allowed;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab .badge{
+  position:absolute;top:6px;right:calc(50% - 18px);
+  background:var(--danger);color:#fff;font-size:9px;border-radius:8px;
+  padding:1px 5px;font-family:var(--mono);
+}
 
-.btn-add{
-  background:transparent;color:var(--text3);
-  border:1px dashed var(--border2);
-  font-size:11px;width:100%;margin-top:8px;
-  padding:8px;
-}
-.btn-add:hover{border-color:var(--accent);color:var(--accent);}
+/* CONTENT */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.view{display:none;padding:14px;padding-bottom:calc(80px + var(--safe-bottom));}
+.view.active{display:block;}
 
-.btn-remove{
-  background:transparent;color:var(--danger);
-  border:1px solid rgba(255,68,68,.3);
-  padding:4px 8px;font-size:10px;
-  margin-left:auto;
+/* FAB */
+.fab{
+  position:fixed;bottom:calc(16px + var(--safe-bottom));right:16px;
+  width:52px;height:52px;border-radius:50%;background:var(--accent);color:#000;
+  border:none;font-size:26px;font-weight:700;cursor:pointer;z-index:100;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(0,230,118,.4);transition:all .15s;
 }
-.btn-remove:hover{background:rgba(255,68,68,.1);}
+.fab:active{transform:scale(.93);}
 
-/* PREVIEW AREA */
-.preview-header{
-  display:flex;align-items:center;gap:10px;
-  margin-bottom:12px;
+/* CARDS */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;margin-bottom:10px;overflow:hidden;}
+.card-header{
+  background:var(--panel2);border-bottom:1px solid var(--border);
+  padding:9px 12px;display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;
 }
-.preview-title{
-  font-size:11px;letter-spacing:3px;text-transform:uppercase;
-  color:var(--text3);font-family:var(--mono);
-}
-.preview-led{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--text3);margin-left:auto;
-}
-.preview-led.on{
-  background:var(--accent);
-  box-shadow:0 0 8px var(--accent);
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent);}
+.dot.blue{background:var(--accent2);box-shadow:0 0 5px var(--accent2);}
+.dot.orange{background:var(--accent3);box-shadow:0 0 5px var(--accent3);}
+.dot.red{background:var(--danger);box-shadow:0 0 5px var(--danger);}
+.dot.gray{background:var(--text3);box-shadow:none;}
 
-.code-box{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:4px;
-  padding:14px;
-  flex:1;
-  font-family:var(--mono);
-  font-size:11px;
-  color:#4fc3f7;
-  line-height:1.7;
-  overflow-y:auto;
-  white-space:pre;
-  resize:none;
-  min-height:300px;
-  max-height:calc(100vh - 280px);
-}
-.code-box:focus{outline:none;border-color:var(--accent2);}
+/* ITEMS */
+.item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border);transition:background .15s;cursor:pointer;}
+.item:last-child{border-bottom:none;}
+.item:active{background:var(--panel2);}
+.item-left{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px;}
+.item-day{font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono);line-height:1;}
+.item-mon{font-size:9px;color:var(--text3);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;}
+.item-body{flex:1;min-width:0;}
+.item-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-meta{font-size:11px;color:var(--text2);font-family:var(--mono);}
+.item-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.item-time{font-size:11px;color:var(--accent2);font-family:var(--mono);white-space:nowrap;}
+.btn-del{background:transparent;border:1px solid rgba(255,68,68,.3);color:var(--danger);border-radius:3px;padding:2px 6px;font-size:10px;font-family:var(--mono);cursor:pointer;}
+.btn-del:active{background:rgba(255,68,68,.15);}
 
-.copy-bar{
-  display:flex;gap:8px;margin-top:10px;
-}
-.btn-copy{
-  background:rgba(0,184,217,.15);
-  border:1px solid rgba(0,184,217,.3);
-  color:var(--accent2);
-  font-family:var(--mono);font-size:11px;
-  padding:8px 14px;border-radius:3px;
-  cursor:pointer;transition:all .15s;
-  flex:1;
-}
-.btn-copy:hover{background:rgba(0,184,217,.25);}
+.pri{font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:2px;letter-spacing:1px;text-transform:uppercase;}
+.pri-alta{background:rgba(255,68,68,.12);color:var(--danger);border:1px solid rgba(255,68,68,.25);}
+.pri-media{background:rgba(255,170,0,.1);color:var(--warn);border:1px solid rgba(255,170,0,.2);}
+.pri-baixa{background:rgba(0,230,118,.08);color:var(--accent);border:1px solid rgba(0,230,118,.15);}
 
-/* validation error */
-.err{
-  background:rgba(255,68,68,.08);
-  border:1px solid rgba(255,68,68,.3);
-  border-left:3px solid var(--danger);
-  border-radius:3px;
-  padding:8px 12px;
-  font-size:11px;font-family:var(--mono);
-  color:#ff8a80;
-  margin-bottom:10px;
-  display:none;
-}
-.err.show{display:block;}
+.cat{font-size:9px;font-family:var(--mono);padding:2px 6px;border-radius:2px;letter-spacing:1px;}
+.cat-trabalho{background:rgba(0,184,217,.1);color:var(--accent2);border:1px solid rgba(0,184,217,.2);}
+.cat-pessoal{background:rgba(0,230,118,.08);color:var(--accent);border:1px solid rgba(0,230,118,.15);}
+.cat-saude{background:rgba(255,109,0,.1);color:var(--accent3);border:1px solid rgba(255,109,0,.2);}
+.cat-financeiro{background:rgba(255,170,0,.1);color:var(--warn);border:1px solid rgba(255,170,0,.2);}
 
-/* badge */
-.badge{
-  font-size:9px;letter-spacing:1px;text-transform:uppercase;
-  font-family:var(--mono);padding:2px 7px;border-radius:2px;
-  background:rgba(0,230,118,.1);color:var(--accent);
-  border:1px solid rgba(0,230,118,.2);
-}
-.badge.blue{background:rgba(0,184,217,.1);color:var(--accent2);border-color:rgba(0,184,217,.2);}
-.badge.orange{background:rgba(255,109,0,.1);color:var(--accent3);border-color:rgba(255,109,0,.2);}
+.todo-check{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px;}
+.todo-check.done{background:var(--accent);border-color:var(--accent);}
+.todo-check.done::after{content:'✓';font-size:12px;color:#000;font-weight:700;}
+.todo-done .item-title{text-decoration:line-through;color:var(--text3);}
 
-/* section toggle */
-.section-hidden{display:none;}
+.empty{text-align:center;padding:40px 20px;font-family:var(--mono);font-size:12px;color:var(--text3);line-height:2;}
+.empty-icon{font-size:36px;margin-bottom:8px;opacity:.4;}
+.sec-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);padding:10px 4px 6px;}
 
-/* responsive */
-@media(max-width:1024px){
-  .content{grid-template-columns:1fr;}
-  .form-area{border-right:none;border-bottom:1px solid var(--border);}
-  .code-box{max-height:300px;}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px 12px 0 0;
+  width:100%;max-width:520px;padding:20px 16px;
+  padding-bottom:calc(20px + var(--safe-bottom));max-height:90vh;overflow-y:auto;
 }
-@media(max-width:700px){
-  .shell{grid-template-columns:1fr;}
-  .sidebar{height:auto;position:relative;flex-direction:row;flex-wrap:wrap;}
-  .nav-section{display:none;}
-  .topbar{padding:10px;}
-  .btn-row{grid-template-columns:1fr 1fr;}
-  .row{grid-template-columns:1fr;}
+.modal-title{font-size:16px;font-weight:700;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);font-family:var(--mono);margin-bottom:5px;}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--panel);border:1px solid var(--border2);border-radius:4px;
+  color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 10px;
+  outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;
 }
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300e676'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.field select option{background:#141d2b;}
+.field textarea{resize:none;height:72px;line-height:1.5;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.btn-cancel{background:var(--panel);border:1px solid var(--border2);color:var(--text2);border-radius:4px;padding:12px;font-family:var(--head);font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+.btn-save{background:var(--accent);border:none;color:#000;border-radius:4px;padding:12px;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:10px;text-align:center;}
+.stat-num{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--accent);}
+.stat-num.blue{color:var(--accent2);}
+.stat-num.orange{color:var(--accent3);}
+.stat-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+
+/* NOTIF */
+.notif-banner{
+  position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+  background:var(--panel2);border:1px solid var(--accent);border-radius:6px;
+  padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--accent);
+  z-index:1000;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,230,118,.2);
+}
+.notif-banner.show{display:block;animation:slideDown .3s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 </style>
 </head>
 <body>
 
-<div class="shell">
+<!-- LOADING -->
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Conectando...</div>
+</div>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="logo-block">
-      <div class="logo-title">RouterForge</div>
-      <div class="logo-sub">NOC Platform</div>
+<!-- LOGIN -->
+<div class="login-screen hide" id="login-screen">
+  <div class="login-logo">Veiga Agenda</div>
+  <div class="login-sub">NOC Personal Manager</div>
+  <div class="login-card">
+    <div class="login-title">Sincronize sua agenda entre<br>iPhone, Android e notebook.</div>
+    <button class="btn-google" onclick="loginGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Entrar com Google
+    </button>
+    <div class="login-note">Seus dados ficam salvos na sua conta Google.<br>Acesse de qualquer dispositivo.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="topbar" id="app-topbar" style="display:none">
+  <div>
+    <div class="app-title">Veiga Agenda</div>
+    <div class="app-sub">NOC Personal Manager</div>
+  </div>
+  <div class="topbar-right">
+    <span class="sync-dot" id="sync-dot" title="Status sync"></span>
+    <div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="date-today" id="dateToday"></div>
     </div>
+    <button class="user-btn" onclick="logout()" id="user-btn" title="Sair">
+      <img class="user-avatar" id="user-avatar" src="" alt="">
+      Sair
+    </button>
+  </div>
+</div>
 
-    <div class="nav-section">
-      <div class="nav-label">Módulos</div>
-      <div class="nav-item active"><span class="nav-dot"></span>Dashboard</div>
-      <div class="nav-item"><span class="nav-dot"></span>WAN Principal</div>
-      <div class="nav-item"><span class="nav-dot"></span>Backup 1</div>
-      <div class="nav-item"><span class="nav-dot"></span>Backup 2</div>
-      <div class="nav-item"><span class="nav-dot"></span>LAN</div>
-      <div class="nav-item"><span class="nav-dot"></span>QoS</div>
-      <div class="nav-item"><span class="nav-dot"></span>Firewall</div>
-      <div class="nav-item"><span class="nav-dot"></span>Gerar Config</div>
+<div class="nav-tabs" id="app-nav" style="display:none">
+  <div class="tab active" onclick="switchTab('agenda')">Agenda</div>
+  <div class="tab" onclick="switchTab('tarefas')" id="tab-tarefas">Tarefas<span class="badge" id="badge-tarefas" style="display:none"></span></div>
+  <div class="tab" onclick="switchTab('hoje')">Hoje</div>
+</div>
+
+<div class="content" id="app-content" style="display:none">
+  <div class="view active" id="view-agenda">
+    <div class="stats-row" id="stats-agenda"></div>
+    <div id="list-agenda"></div>
+  </div>
+  <div class="view" id="view-tarefas">
+    <div class="stats-row" id="stats-tarefas"></div>
+    <div id="list-tarefas"></div>
+  </div>
+  <div class="view" id="view-hoje">
+    <div id="list-hoje"></div>
+  </div>
+</div>
+
+<button class="fab" id="fab" style="display:none" onclick="openModal()">+</button>
+<div class="notif-banner" id="notif-banner"></div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title"><span class="dot" id="modal-dot"></span><span id="modal-title-text">Novo Evento</span></div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="f-tipo" onchange="onTipoChange(this.value)">
+        <option value="evento">Compromisso / Evento</option>
+        <option value="tarefa">Tarefa (To-do)</option>
+      </select>
     </div>
-
-    <div class="sidebar-status">
-      <div class="status-row"><span>Engine</span><span class="status-ok">ONLINE</span></div>
-      <div class="status-row"><span>RouterOS</span><span class="status-ok">v7 Ready</span></div>
-      <div class="status-row"><span>Failover</span><span class="status-ok">Ativado</span></div>
-      <div class="status-row"><span>QoS</span><span class="status-warn">Opcional</span></div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main">
-
-    <!-- TOP BAR -->
-    <div class="topbar">
-      <div class="stat-pill">
-        <div class="stat-label">WAN Links</div>
-        <div class="stat-val" id="stat-links">2</div>
+    <div class="field"><label>Titulo</label><input type="text" id="f-titulo" placeholder="Descreva o compromisso..." maxlength="80"></div>
+    <div id="evento-fields">
+      <div class="row2">
+        <div class="field"><label>Data</label><input type="date" id="f-data"></div>
+        <div class="field"><label>Hora</label><input type="time" id="f-hora"></div>
       </div>
-      <div class="stat-pill">
-        <div class="stat-label">Failover</div>
-        <div class="stat-val blue">Ativado</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-label">QoS</div>
-        <div class="stat-val orange" id="stat-qos">Opcional</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-label">RouterOS</div>
-        <div class="stat-val gray">v7 Ready</div>
+      <div class="row2">
+        <div class="field">
+          <label>Categoria</label>
+          <select id="f-cat">
+            <option value="trabalho">Trabalho</option>
+            <option value="pessoal">Pessoal</option>
+            <option value="saude">Saude</option>
+            <option value="financeiro">Financeiro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Lembrete</label>
+          <select id="f-lembrete">
+            <option value="0">Sem lembrete</option>
+            <option value="5">5 min antes</option>
+            <option value="15" selected>15 min antes</option>
+            <option value="30">30 min antes</option>
+            <option value="60">1 hora antes</option>
+            <option value="1440">1 dia antes</option>
+          </select>
+        </div>
       </div>
     </div>
-
-    <!-- CONTENT GRID -->
-    <div class="content">
-
-      <!-- FORM SIDE -->
-      <div class="form-area">
-
-        <div id="err-box" class="err"></div>
-
-        <!-- Identificação -->
-        <div class="card">
-          <div class="card-header"><span class="dot gray"></span>Identificação do Sistema</div>
-          <div class="card-body">
-            <div class="row full">
-              <div class="field">
-                <label>Nome / Hostname</label>
-                <input type="text" id="identificacao" placeholder="EMPRESA-MATRIZ" required>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Link Principal -->
-        <div class="card">
-          <div class="card-header">
-            <span class="dot"></span>Link Principal
-            <span class="badge" style="margin-left:auto;">WAN-1</span>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="field">
-                <label>Interface</label>
-                <select id="interface_principal" required>
-                  <option value="">-- Selecione --</option>
-                  <optgroup label="Ethernet">
-                    <option>ether1</option><option>ether2</option><option>ether3</option>
-                    <option>ether4</option><option>ether5</option><option>ether6</option>
-                    <option>ether7</option><option>ether8</option>
-                  </optgroup>
-                  <optgroup label="SFP">
-                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
-                    <option>sfp1</option><option>sfp2</option>
-                  </optgroup>
-                  <optgroup label="Wireless">
-                    <option>wlan1</option><option>wlan2</option>
-                  </optgroup>
-                  <optgroup label="LTE / Modem">
-                    <option>lte1</option><option>lte2</option>
-                  </optgroup>
-                  <optgroup label="Bridge / VLAN base">
-                    <option>bridge1</option><option>bridge2</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="interface_principal_custom" placeholder="ex: ether9" class="section-hidden" style="margin-top:4px;">
-              </div>
-              <div class="field">
-                <label>Tipo de Conexão</label>
-                <select id="tipo_principal" required>
-                  <option value="">-- Selecione --</option>
-                  <option value="pppoe">PPPoE</option>
-                  <option value="dhcp">DHCP Client</option>
-                  <option value="static">IP Fixo (Static)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>VLAN ID (opcional)</label>
-                <input type="number" id="vlan_principal" placeholder="100" min="1" max="4094">
-              </div>
-              <div class="field">
-                <label>IP de Monitoramento</label>
-                <select id="ip_monitor_principal_sel" onchange="onMonitorChange('principal',this.value)">
-                  <option value="">-- Selecione --</option>
-                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
-                  <option value="8.8.8.8">8.8.8.8 — Google</option>
-                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
-                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
-                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
-                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
-                  <option value="__custom__">Digitar manualmente...</option>
-                </select>
-                <input type="text" id="ip_monitor_principal" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;" required>
-                <div class="hint">Netwatch usa este host para detectar queda</div>
-              </div>
-            </div>
-            <div class="row full">
-              <div class="field">
-                <label>Operadora</label>
-                <select id="operadora_principal_sel" onchange="onOperadoraChange('principal',this.value)">
-                  <option value="">-- Selecione a operadora --</option>
-                  <optgroup label="Telecom">
-                    <option value="VIVO">VIVO</option>
-                    <option value="CLARO">CLARO</option>
-                    <option value="TIM">TIM</option>
-                    <option value="OI">OI</option>
-                    <option value="NET">NET</option>
-                    <option value="SKY">SKY</option>
-                  </optgroup>
-                  <optgroup label="ISP Regional">
-                    <option value="BRISANET">BRISANET</option>
-                    <option value="UNIFIQUE">UNIFIQUE</option>
-                    <option value="ALARES">ALARES</option>
-                    <option value="DESKTOP">DESKTOP</option>
-                    <option value="VOGEL">VOGEL</option>
-                  </optgroup>
-                  <optgroup label="Corporativo">
-                    <option value="EMBRATEL">EMBRATEL</option>
-                    <option value="TELEMAR">TELEMAR</option>
-                    <option value="AMERICANET">AMERICANET</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="operadora_principal" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;" required>
-              </div>
-            </div>
-            <!-- PPPoE fields -->
-            <div id="pppoe_principal_fields" class="sub-panel">
-              <div class="sub-panel-label">Credenciais PPPoE</div>
-              <div class="row">
-                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_principal" placeholder="usuario@provedor.com"></div>
-                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_principal" placeholder="•••••••"></div>
-              </div>
-            </div>
-            <!-- Static fields -->
-            <div id="static_principal_fields" class="sub-panel blue">
-              <div class="sub-panel-label">Endereçamento Estático</div>
-              <div class="row">
-                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_principal" placeholder="200.200.1.10/30"></div>
-                <div class="field"><label>Gateway</label><input type="text" id="gateway_principal" placeholder="200.200.1.9"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Link Backup-1 -->
-        <div class="card">
-          <div class="card-header">
-            <span class="dot blue"></span>Link Backup-1
-            <span class="badge blue" style="margin-left:auto;">WAN-2</span>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="field">
-                <label>Interface</label>
-                <select id="interface_backup1" required>
-                  <option value="">-- Selecione --</option>
-                  <optgroup label="Ethernet">
-                    <option>ether1</option><option>ether2</option><option>ether3</option>
-                    <option>ether4</option><option>ether5</option><option>ether6</option>
-                    <option>ether7</option><option>ether8</option>
-                  </optgroup>
-                  <optgroup label="SFP">
-                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
-                    <option>sfp1</option><option>sfp2</option>
-                  </optgroup>
-                  <optgroup label="Wireless">
-                    <option>wlan1</option><option>wlan2</option>
-                  </optgroup>
-                  <optgroup label="LTE / Modem">
-                    <option>lte1</option><option>lte2</option>
-                  </optgroup>
-                  <optgroup label="Bridge / VLAN base">
-                    <option>bridge1</option><option>bridge2</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="interface_backup1_custom" placeholder="ex: lte1" class="section-hidden" style="margin-top:4px;">
-              </div>
-              <div class="field">
-                <label>Tipo de Conexão</label>
-                <select id="tipo_backup1" required>
-                  <option value="">-- Selecione --</option>
-                  <option value="pppoe">PPPoE</option>
-                  <option value="dhcp">DHCP Client</option>
-                  <option value="static">IP Fixo (Static)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>VLAN ID (opcional)</label>
-                <input type="number" id="vlan_backup1" placeholder="200" min="1" max="4094">
-              </div>
-              <div class="field">
-                <label>IP de Monitoramento</label>
-                <select id="ip_monitor_backup1_sel" onchange="onMonitorChange('backup1',this.value)">
-                  <option value="">-- Selecione --</option>
-                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
-                  <option value="8.8.8.8">8.8.8.8 — Google</option>
-                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
-                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
-                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
-                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
-                  <option value="__custom__">Digitar manualmente...</option>
-                </select>
-                <input type="text" id="ip_monitor_backup1" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;" required>
-              </div>
-            </div>
-            <div class="row full">
-              <div class="field">
-                <label>Operadora</label>
-                <select id="operadora_backup1_sel" onchange="onOperadoraChange('backup1',this.value)">
-                  <option value="">-- Selecione a operadora --</option>
-                  <optgroup label="Telecom">
-                    <option value="VIVO">VIVO</option>
-                    <option value="CLARO">CLARO</option>
-                    <option value="TIM">TIM</option>
-                    <option value="OI">OI</option>
-                    <option value="NET">NET</option>
-                    <option value="SKY">SKY</option>
-                  </optgroup>
-                  <optgroup label="ISP Regional">
-                    <option value="BRISANET">BRISANET</option>
-                    <option value="UNIFIQUE">UNIFIQUE</option>
-                    <option value="ALARES">ALARES</option>
-                    <option value="DESKTOP">DESKTOP</option>
-                    <option value="VOGEL">VOGEL</option>
-                  </optgroup>
-                  <optgroup label="Corporativo">
-                    <option value="EMBRATEL">EMBRATEL</option>
-                    <option value="TELEMAR">TELEMAR</option>
-                    <option value="AMERICANET">AMERICANET</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="operadora_backup1" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;" required>
-              </div>
-            </div>
-            <div id="pppoe_backup1_fields" class="sub-panel">
-              <div class="sub-panel-label">Credenciais PPPoE</div>
-              <div class="row">
-                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_backup1" placeholder="usuario@provedor.com"></div>
-                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_backup1" placeholder="•••••••"></div>
-              </div>
-            </div>
-            <div id="static_backup1_fields" class="sub-panel blue">
-              <div class="sub-panel-label">Endereçamento Estático</div>
-              <div class="row">
-                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_backup1" placeholder="10.0.0.10/30"></div>
-                <div class="field"><label>Gateway</label><input type="text" id="gateway_backup1" placeholder="10.0.0.9"></div>
-              </div>
-            </div>
-            <button type="button" class="btn btn-add" id="btn_add_backup2" onclick="adicionarBackup2()">+ Adicionar Link Backup-2</button>
-          </div>
-        </div>
-
-        <!-- Link Backup-2 (dinâmico) -->
-        <div class="card section-hidden" id="backup2_section">
-          <div class="card-header">
-            <span class="dot orange"></span>Link Backup-2
-            <span class="badge orange" style="margin-left:auto;">WAN-3</span>
-            <button class="btn btn-remove" onclick="removerBackup2()">✕ Remover</button>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="field">
-                <label>Interface</label>
-                <select id="interface_backup2">
-                  <option value="">-- Selecione --</option>
-                  <optgroup label="Ethernet">
-                    <option>ether1</option><option>ether2</option><option>ether3</option>
-                    <option>ether4</option><option>ether5</option><option>ether6</option>
-                    <option>ether7</option><option>ether8</option>
-                  </optgroup>
-                  <optgroup label="SFP">
-                    <option>sfp-sfpplus1</option><option>sfp-sfpplus2</option>
-                    <option>sfp1</option><option>sfp2</option>
-                  </optgroup>
-                  <optgroup label="Wireless">
-                    <option>wlan1</option><option>wlan2</option>
-                  </optgroup>
-                  <optgroup label="LTE / Modem">
-                    <option>lte1</option><option>lte2</option>
-                  </optgroup>
-                  <optgroup label="Bridge / VLAN base">
-                    <option>bridge1</option><option>bridge2</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="interface_backup2_custom" placeholder="ex: wlan2" class="section-hidden" style="margin-top:4px;">
-              </div>
-              <div class="field">
-                <label>Tipo de Conexão</label>
-                <select id="tipo_backup2">
-                  <option value="">-- Selecione --</option>
-                  <option value="pppoe">PPPoE</option>
-                  <option value="dhcp">DHCP Client</option>
-                  <option value="static">IP Fixo (Static)</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label>VLAN ID (opcional)</label>
-                <input type="number" id="vlan_backup2" placeholder="300" min="1" max="4094">
-              </div>
-              <div class="field">
-                <label>IP de Monitoramento</label>
-                <select id="ip_monitor_backup2_sel" onchange="onMonitorChange('backup2',this.value)">
-                  <option value="">-- Selecione --</option>
-                  <option value="1.1.1.1">1.1.1.1 — Cloudflare</option>
-                  <option value="8.8.8.8">8.8.8.8 — Google</option>
-                  <option value="8.8.4.4">8.8.4.4 — Google Alt</option>
-                  <option value="1.0.0.1">1.0.0.1 — Cloudflare Alt</option>
-                  <option value="9.9.9.9">9.9.9.9 — Quad9</option>
-                  <option value="208.67.222.222">208.67.222.222 — OpenDNS</option>
-                  <option value="__custom__">Digitar manualmente...</option>
-                </select>
-                <input type="text" id="ip_monitor_backup2" placeholder="Ex: 200.200.1.1" class="section-hidden" style="margin-top:4px;">
-              </div>
-            </div>
-            <div class="row full">
-              <div class="field">
-                <label>Operadora</label>
-                <select id="operadora_backup2_sel" onchange="onOperadoraChange('backup2',this.value)">
-                  <option value="">-- Selecione a operadora --</option>
-                  <optgroup label="Telecom">
-                    <option value="VIVO">VIVO</option>
-                    <option value="CLARO">CLARO</option>
-                    <option value="TIM">TIM</option>
-                    <option value="OI">OI</option>
-                    <option value="NET">NET</option>
-                    <option value="SKY">SKY</option>
-                  </optgroup>
-                  <optgroup label="ISP Regional">
-                    <option value="BRISANET">BRISANET</option>
-                    <option value="UNIFIQUE">UNIFIQUE</option>
-                    <option value="ALARES">ALARES</option>
-                    <option value="DESKTOP">DESKTOP</option>
-                    <option value="VOGEL">VOGEL</option>
-                  </optgroup>
-                  <optgroup label="Corporativo">
-                    <option value="EMBRATEL">EMBRATEL</option>
-                    <option value="TELEMAR">TELEMAR</option>
-                    <option value="AMERICANET">AMERICANET</option>
-                  </optgroup>
-                  <optgroup label="Outro">
-                    <option value="__custom__">Digitar manualmente...</option>
-                  </optgroup>
-                </select>
-                <input type="text" id="operadora_backup2" placeholder="Digite o nome da operadora" class="section-hidden" style="margin-top:4px;">
-              </div>
-            </div>
-            <div id="pppoe_backup2_fields" class="sub-panel">
-              <div class="sub-panel-label">Credenciais PPPoE</div>
-              <div class="row">
-                <div class="field"><label>Usuário</label><input type="text" id="usuario_pppoe_backup2" placeholder="usuario@provedor.com"></div>
-                <div class="field"><label>Senha</label><input type="password" id="senha_pppoe_backup2" placeholder="•••••••"></div>
-              </div>
-            </div>
-            <div id="static_backup2_fields" class="sub-panel blue">
-              <div class="sub-panel-label">Endereçamento Estático</div>
-              <div class="row">
-                <div class="field"><label>IP / Máscara</label><input type="text" id="ip_backup2" placeholder="172.16.0.10/30"></div>
-                <div class="field"><label>Gateway</label><input type="text" id="gateway_backup2" placeholder="172.16.0.9"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LAN -->
-        <div class="card">
-          <div class="card-header"><span class="dot gray"></span>Rede Interna (LAN)</div>
-          <div class="card-body">
-            <div class="row">
-              <div class="field">
-                <label>Rede LAN (CIDR)</label>
-                <input type="text" id="rede_lan" placeholder="192.168.10.0/23" value="192.168.10.0/23" required>
-                <div class="hint">Gateway e DHCP calculados automaticamente</div>
-              </div>
-              <div class="field">
-                <label>Interface(s) LAN</label>
-                <input type="text" id="interfaces_lan" placeholder="ether4 ou ether3,ether4,ether5">
-                <div class="hint">Múltiplas: separar por vírgula</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- QoS -->
-        <div class="card">
-          <div class="card-header"><span class="dot orange"></span>QoS — Controle de Banda</div>
-          <div class="card-body">
-            <div class="check-row">
-              <input type="checkbox" id="habilitar_qos">
-              <label for="habilitar_qos">Configurar controle de banda geral (Simple Queue)</label>
-            </div>
-            <div id="qos_fields" class="sub-panel orange">
-              <div class="sub-panel-label">Parâmetros de Banda</div>
-              <div class="row">
-                <div class="field">
-                  <label>Download máx (Mbps)</label>
-                  <input type="number" id="velocidade_down" placeholder="100" value="20">
-                </div>
-                <div class="field">
-                  <label>Upload máx (Mbps)</label>
-                  <input type="number" id="velocidade_up" placeholder="100" value="20">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="gerarConfig()">&#9654; Gerar Configuração</button>
-          <button class="btn btn-dl" id="btn_rsc" disabled onclick="downloadConfig('rsc')">⬇ .RSC</button>
-          <button class="btn btn-dl" id="btn_txt" disabled onclick="downloadConfig('txt')">⬇ .TXT</button>
-          <button class="btn btn-dl" id="btn_clear" onclick="limpar()">⟳ Reset</button>
-        </div>
-
-      </div><!-- /form-area -->
-
-      <!-- PREVIEW SIDE -->
-      <div class="preview-area">
-        <div class="preview-header">
-          <span class="preview-title">Preview RouterOS Script</span>
-          <span id="preview-led" class="preview-led"></span>
-        </div>
-        <textarea id="configOutput" class="code-box" readonly># RouterForge NOC
-# Aguardando dados do formulario...
-# Preencha os campos e clique em [ Gerar Configuracao ]
-</textarea>
-        <div class="copy-bar">
-          <button class="btn-copy" onclick="copyConfig()">&#128203; Copiar Script</button>
+    <div id="tarefa-fields" style="display:none">
+      <div class="row2">
+        <div class="field"><label>Prazo (opcional)</label><input type="date" id="f-prazo"></div>
+        <div class="field">
+          <label>Prioridade</label>
+          <select id="f-prioridade">
+            <option value="alta">Alta</option>
+            <option value="media" selected>Media</option>
+            <option value="baixa">Baixa</option>
+          </select>
         </div>
       </div>
+    </div>
+    <div class="field"><label>Notas (opcional)</label><textarea id="f-notas" placeholder="Informacoes adicionais..."></textarea></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="salvar()">Salvar</button>
+    </div>
+  </div>
+</div>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /shell -->
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
-<footer style="background:var(--surface);border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:center;gap:16px;font-family:var(--mono);font-size:11px;color:var(--text3);">
-  <span>Desenvolvido por <span style="color:var(--accent);letter-spacing:1px;">Luciano Veiga</span></span>
-  <span style="color:var(--border2);">|</span>
-  <a href="https://www.linkedin.com/in/lucianoveiga-ti" target="_blank" style="color:var(--accent2);text-decoration:none;letter-spacing:1px;transition:color .15s;" onmouseover="this.style.color='#4fc3f7'" onmouseout="this.style.color='var(--accent2)'">linkedin.com/in/lucianoveiga-ti</a>
-</footer>
+const firebaseConfig = {
+  apiKey: "AIzaSyCraFhxEeVDFdHTZRO4qmyqQ-WH62eMdoA",
+  authDomain: "agenda-4f1e7.firebaseapp.com",
+  projectId: "agenda-4f1e7",
+  storageBucket: "agenda-4f1e7.firebasestorage.app",
+  messagingSenderId: "552846345255",
+  appId: "1:552846345255:web:f94cbcedfb14dd68487a02"
+};
 
-<script>
-/* ===== HELPERS ===== */
-function getIface(sufixo){
-  const sel = document.getElementById('interface_'+sufixo);
-  if(sel && sel.value === '__custom__'){
-    return (document.getElementById('interface_'+sufixo+'_custom')?.value || '').trim();
-  }
-  return sel ? sel.value.trim() : '';
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-function getVal(id){ return (document.getElementById(id)?.value || '').trim(); }
+let uid = null;
+let unsub1 = null, unsub2 = null;
+let eventos = [], tarefas = [];
+let editId = null;
+let currentTab = 'agenda';
 
-/* ===== OPERADORA TOGGLE ===== */
-function onOperadoraChange(sufixo, val){
-  const inp = document.getElementById('operadora_'+sufixo);
-  if(val==='__custom__'){
-    inp.classList.remove('section-hidden');
-    inp.value='';
-    inp.focus();
+/* ===== AUTH ===== */
+window.loginGoogle = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) { showNotif('Erro ao fazer login: ' + e.message); }
+};
+
+window.logout = async () => {
+  if(!confirm('Deseja sair?')) return;
+  if(unsub1) unsub1();
+  if(unsub2) unsub2();
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  document.getElementById('loading-screen').classList.add('hide');
+  if(user){
+    uid = user.uid;
+    document.getElementById('login-screen').classList.add('hide');
+    document.getElementById('app-topbar').style.display='flex';
+    document.getElementById('app-nav').style.display='flex';
+    document.getElementById('app-content').style.display='block';
+    document.getElementById('fab').style.display='flex';
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-btn').title = user.displayName + ' — Clique para sair';
+    subscribeData();
+    if(Notification.permission==='default') Notification.requestPermission();
   } else {
-    inp.classList.add('section-hidden');
-    inp.value = val;
+    uid = null;
+    document.getElementById('login-screen').classList.remove('hide');
+    document.getElementById('app-topbar').style.display='none';
+    document.getElementById('app-nav').style.display='none';
+    document.getElementById('app-content').style.display='none';
+    document.getElementById('fab').style.display='none';
+    if(unsub1){ unsub1(); unsub1=null; }
+    if(unsub2){ unsub2(); unsub2=null; }
   }
+});
+
+/* ===== FIRESTORE REALTIME ===== */
+function subscribeData(){
+  setSyncStatus('syncing');
+  const evRef = query(collection(db,'users',uid,'eventos'), orderBy('data'));
+  unsub1 = onSnapshot(evRef, snap => {
+    eventos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    render(); setSyncStatus('synced');
+  }, () => setSyncStatus(''));
+
+  const tarRef = query(collection(db,'users',uid,'tarefas'), orderBy('criadoEm'));
+  unsub2 = onSnapshot(tarRef, snap => {
+    tarefas = snap.docs.map(d=>({id:d.id,...d.data()}));
+    render(); setSyncStatus('synced');
+  }, () => setSyncStatus(''));
 }
 
-/* ===== IP MONITOR TOGGLE ===== */
-function onMonitorChange(sufixo, val){
-  const inp = document.getElementById('ip_monitor_'+sufixo);
-  if(val==='__custom__'){
-    inp.classList.remove('section-hidden');
-    inp.value='';
-    inp.focus();
-  } else {
-    inp.classList.add('section-hidden');
-    inp.value = val;
-  }
+function setSyncStatus(s){
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot' + (s ? ' '+s : '');
 }
 
-/* ===== INTERFACE CUSTOM TOGGLE ===== */
-['principal','backup1','backup2'].forEach(s=>{
-  const sel = document.getElementById('interface_'+s);
-  if(!sel) return;
-  sel.addEventListener('change',function(){
-    const custom = document.getElementById('interface_'+s+'_custom');
-    if(!custom) return;
-    if(this.value==='__custom__'){
-      custom.classList.remove('section-hidden');
-      custom.focus();
+/* ===== CRUD ===== */
+async function salvarEvento(obj, id){
+  setSyncStatus('syncing');
+  try {
+    if(id) await updateDoc(doc(db,'users',uid,'eventos',id), obj);
+    else await addDoc(collection(db,'users',uid,'eventos'), {...obj, criadoEm:serverTimestamp()});
+    showNotif('✓ Salvo com sucesso');
+  } catch(e){ showNotif('Erro: '+e.message); setSyncStatus(''); }
+}
+
+async function salvarTarefa(obj, id){
+  setSyncStatus('syncing');
+  try {
+    if(id) await updateDoc(doc(db,'users',uid,'tarefas',id), obj);
+    else await addDoc(collection(db,'users',uid,'tarefas'), {...obj, criadoEm:serverTimestamp()});
+    showNotif('✓ Salvo com sucesso');
+  } catch(e){ showNotif('Erro: '+e.message); setSyncStatus(''); }
+}
+
+window.deletarEvento = async (id,e) => {
+  e.stopPropagation();
+  if(!confirm('Remover este compromisso?')) return;
+  setSyncStatus('syncing');
+  await deleteDoc(doc(db,'users',uid,'eventos',id));
+};
+
+window.deletarTarefa = async (id,e) => {
+  e.stopPropagation();
+  if(!confirm('Remover esta tarefa?')) return;
+  setSyncStatus('syncing');
+  await deleteDoc(doc(db,'users',uid,'tarefas',id));
+};
+
+window.toggleTarefa = async (id,e) => {
+  e.stopPropagation();
+  const t = tarefas.find(t=>t.id===id);
+  if(t){ setSyncStatus('syncing'); await updateDoc(doc(db,'users',uid,'tarefas',id),{feita:!t.feita}); }
+};
+
+/* ===== MODAL ===== */
+window.openModal = (id) => {
+  editId = id || null;
+  if(editId){
+    const ev = eventos.find(e=>e.id===editId) || tarefas.find(t=>t.id===editId);
+    if(!ev) return;
+    document.getElementById('f-tipo').value = ev.tipo;
+    onTipoChange(ev.tipo);
+    document.getElementById('f-titulo').value = ev.titulo||'';
+    document.getElementById('f-notas').value = ev.notas||'';
+    if(ev.tipo==='evento'){
+      document.getElementById('f-data').value = ev.data||'';
+      document.getElementById('f-hora').value = ev.hora||'';
+      document.getElementById('f-cat').value = ev.cat||'trabalho';
+      document.getElementById('f-lembrete').value = ev.lembrete||'0';
+      document.getElementById('modal-dot').className='dot blue';
+      document.getElementById('modal-title-text').textContent='Editar Evento';
     } else {
-      custom.classList.add('section-hidden');
+      document.getElementById('f-prazo').value = ev.prazo||'';
+      document.getElementById('f-prioridade').value = ev.prioridade||'media';
+      document.getElementById('modal-dot').className='dot orange';
+      document.getElementById('modal-title-text').textContent='Editar Tarefa';
+    }
+  } else {
+    document.getElementById('f-titulo').value='';
+    document.getElementById('f-notas').value='';
+    document.getElementById('f-data').value=todayStr();
+    document.getElementById('f-hora').value='';
+    document.getElementById('f-prazo').value='';
+    document.getElementById('f-cat').value='trabalho';
+    document.getElementById('f-lembrete').value='15';
+    document.getElementById('f-prioridade').value='media';
+    document.getElementById('f-tipo').value='evento';
+    onTipoChange('evento');
+    document.getElementById('modal-dot').className='dot';
+    document.getElementById('modal-title-text').textContent='Novo Compromisso';
+  }
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-titulo').focus(),100);
+};
+
+window.closeModal = () => document.getElementById('overlay').classList.remove('open');
+window.closeModalOutside = (e) => { if(e.target===document.getElementById('overlay')) closeModal(); };
+
+window.onTipoChange = (val) => {
+  document.getElementById('evento-fields').style.display = val==='evento'?'block':'none';
+  document.getElementById('tarefa-fields').style.display = val==='tarefa'?'block':'none';
+  document.getElementById('modal-dot').className = val==='evento'?'dot blue':'dot orange';
+  document.getElementById('modal-title-text').textContent = val==='evento'?'Novo Compromisso':'Nova Tarefa';
+};
+
+window.salvar = async () => {
+  const tipo = document.getElementById('f-tipo').value;
+  const titulo = document.getElementById('f-titulo').value.trim();
+  if(!titulo){ showNotif('⚠ Informe um titulo'); return; }
+  if(tipo==='evento'){
+    const data = document.getElementById('f-data').value;
+    if(!data){ showNotif('⚠ Informe a data'); return; }
+    await salvarEvento({
+      tipo:'evento', titulo,
+      data, hora:document.getElementById('f-hora').value,
+      cat:document.getElementById('f-cat').value,
+      lembrete:document.getElementById('f-lembrete').value,
+      notas:document.getElementById('f-notas').value.trim(),
+      lembreteDisparado:false
+    }, editId);
+  } else {
+    await salvarTarefa({
+      tipo:'tarefa', titulo,
+      prazo:document.getElementById('f-prazo').value,
+      prioridade:document.getElementById('f-prioridade').value,
+      notas:document.getElementById('f-notas').value.trim(),
+      feita: editId ? (tarefas.find(t=>t.id===editId)?.feita||false) : false
+    }, editId);
+  }
+  closeModal();
+};
+
+/* ===== HELPERS ===== */
+const MESES=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+function formatData(s){
+  if(!s) return {day:'--',mon:'---'};
+  const [y,m,d]=s.split('-').map(Number);
+  return {day:String(d).padStart(2,'0'),mon:MESES[m-1]};
+}
+
+function todayStr(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+
+function catBadge(c){ return `<span class="cat cat-${c}">${c}</span>`; }
+function priBadge(p){ return `<span class="pri pri-${p}">${p}</span>`; }
+
+function showNotif(msg){
+  const b=document.getElementById('notif-banner');
+  b.textContent=msg; b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'),3500);
+}
+
+/* ===== TABS ===== */
+window.switchTab = (tab) => {
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById('view-'+tab).classList.add('active');
+  render();
+};
+
+/* ===== RENDER ===== */
+function render(){ renderAgenda(); renderTarefas(); renderHoje(); renderBadge(); }
+
+function eventoHTML(ev,passado=false){
+  const {day,mon}=formatData(ev.data);
+  return `<div class="item" onclick="openModal('${ev.id}')">
+    <div class="item-left" style="${passado?'opacity:.4':''}">
+      <div class="item-day">${day}</div><div class="item-mon">${mon}</div>
+    </div>
+    <div class="item-body">
+      <div class="item-title">${ev.titulo}</div>
+      <div class="item-meta">${ev.hora||'Hora nao definida'}${ev.notas?' · '+ev.notas.substring(0,28):''}</div>
+      <div class="item-tags">${catBadge(ev.cat)}${ev.lembrete&&ev.lembrete!='0'?`<span class="cat" style="background:rgba(255,170,0,.1);color:var(--warn);border:1px solid rgba(255,170,0,.2);">⏰ ${ev.lembrete}min</span>`:''}</div>
+    </div>
+    <div class="item-right">
+      <div class="item-time">${ev.hora||'--:--'}</div>
+      <button class="btn-del" onclick="deletarEvento('${ev.id}',event)">✕</button>
+    </div>
+  </div>`;
+}
+
+function tarefaHTML(t){
+  const {day,mon}=formatData(t.prazo);
+  return `<div class="item${t.feita?' todo-done':''}" onclick="openModal('${t.id}')">
+    <div class="todo-check${t.feita?' done':''}" onclick="toggleTarefa('${t.id}',event)"></div>
+    <div class="item-body">
+      <div class="item-title">${t.titulo}</div>
+      <div class="item-meta">${t.prazo?'Prazo: '+day+'/'+mon:'Sem prazo'}${t.notas?' · '+t.notas.substring(0,25):''}</div>
+      <div class="item-tags">${priBadge(t.prioridade)}</div>
+    </div>
+    <div class="item-right">
+      <button class="btn-del" onclick="deletarTarefa('${t.id}',event)">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderAgenda(){
+  const today=todayStr();
+  const futuros=eventos.filter(e=>e.data>=today);
+  const passados=eventos.filter(e=>e.data<today);
+  const hoje=eventos.filter(e=>e.data===today).length;
+  const semana=eventos.filter(e=>{const d=new Date(e.data+'T00:00');const n=new Date();const diff=(d-n)/86400000;return diff>=0&&diff<7;}).length;
+  document.getElementById('stats-agenda').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${hoje}</div><div class="stat-lbl">Hoje</div></div>
+    <div class="stat-box"><div class="stat-num blue">${semana}</div><div class="stat-lbl">Semana</div></div>
+    <div class="stat-box"><div class="stat-num orange">${eventos.length}</div><div class="stat-lbl">Total</div></div>`;
+  let html='';
+  if(!futuros.length&&!passados.length){
+    html=`<div class="empty"><div class="empty-icon">📅</div>Nenhum compromisso cadastrado.<br>Toque em + para adicionar.</div>`;
+  } else {
+    if(futuros.length){ html+=`<div class="sec-label">Proximos</div><div class="card"><div class="card-header"><span class="dot blue"></span>Agendados</div>${futuros.map(e=>eventoHTML(e)).join('')}</div>`; }
+    if(passados.length){ html+=`<div class="sec-label">Anteriores</div><div class="card"><div class="card-header"><span class="dot gray"></span>Historico</div>${passados.slice(-5).reverse().map(e=>eventoHTML(e,true)).join('')}</div>`; }
+  }
+  document.getElementById('list-agenda').innerHTML=html;
+}
+
+function renderTarefas(){
+  const pendentes=tarefas.filter(t=>!t.feita);
+  const feitas=tarefas.filter(t=>t.feita);
+  document.getElementById('stats-tarefas').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${pendentes.length}</div><div class="stat-lbl">Pendentes</div></div>
+    <div class="stat-box"><div class="stat-num blue">${feitas.length}</div><div class="stat-lbl">Concluidas</div></div>
+    <div class="stat-box"><div class="stat-num orange">${tarefas.length}</div><div class="stat-lbl">Total</div></div>`;
+  let html='';
+  if(!tarefas.length){
+    html=`<div class="empty"><div class="empty-icon">✅</div>Nenhuma tarefa cadastrada.<br>Toque em + para adicionar.</div>`;
+  } else {
+    [['alta','red'],['media','orange'],['baixa','gray']].forEach(([p,dot])=>{
+      const its=pendentes.filter(t=>t.prioridade===p);
+      if(!its.length) return;
+      html+=`<div class="card"><div class="card-header"><span class="dot ${dot}"></span>${p.charAt(0).toUpperCase()+p.slice(1)} Prioridade</div>${its.map(tarefaHTML).join('')}</div>`;
+    });
+    if(feitas.length) html+=`<div class="sec-label">Concluidas</div><div class="card"><div class="card-header"><span class="dot gray"></span>Feitas</div>${feitas.slice(-5).reverse().map(tarefaHTML).join('')}</div>`;
+  }
+  document.getElementById('list-tarefas').innerHTML=html;
+}
+
+function renderHoje(){
+  const today=todayStr();
+  const evHoje=eventos.filter(e=>e.data===today).sort((a,b)=>a.hora.localeCompare(b.hora));
+  const tarHoje=tarefas.filter(t=>!t.feita&&(t.prazo===today||!t.prazo));
+  let html='';
+  if(!evHoje.length&&!tarHoje.length){
+    html=`<div class="empty"><div class="empty-icon">🌅</div>Nada programado para hoje.<br>Aproveite o dia!</div>`;
+  } else {
+    if(evHoje.length) html+=`<div class="sec-label">Compromissos de Hoje</div><div class="card"><div class="card-header"><span class="dot blue"></span>Agenda do Dia</div>${evHoje.map(e=>eventoHTML(e)).join('')}</div>`;
+    if(tarHoje.length) html+=`<div class="sec-label">Tarefas Pendentes</div><div class="card"><div class="card-header"><span class="dot orange"></span>Para Fazer</div>${tarHoje.map(tarefaHTML).join('')}</div>`;
+  }
+  document.getElementById('list-hoje').innerHTML=html;
+}
+
+function renderBadge(){
+  const p=tarefas.filter(t=>!t.feita).length;
+  const b=document.getElementById('badge-tarefas');
+  b.textContent=p; b.style.display=p?'block':'none';
+}
+
+/* ===== CLOCK ===== */
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('dateToday').textContent=n.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+}
+updateClock(); setInterval(updateClock,1000);
+
+/* ===== LEMBRETES ===== */
+setInterval(()=>{
+  const now=new Date();
+  eventos.forEach(ev=>{
+    if(!ev.lembrete||ev.lembrete=='0'||ev.lembreteDisparado) return;
+    const evDate=new Date(ev.data+'T'+(ev.hora||'00:00'));
+    const diff=(evDate-now)/60000;
+    if(diff<=parseInt(ev.lembrete)&&diff>=0){
+      updateDoc(doc(db,'users',uid,'eventos',ev.id),{lembreteDisparado:true});
+      showNotif('⚡ '+ev.titulo+' em '+ev.hora);
+      if(Notification.permission==='granted') new Notification('Veiga Agenda',{body:ev.titulo+' — '+ev.hora});
     }
   });
-});
+},30000);
 
-/* ===== TIPO DE CONEXÃO TOGGLE ===== */
-function onTipoChange(sufixo, val){
-  ['pppoe','static'].forEach(t=>{
-    const el = document.getElementById(t+'_'+sufixo+'_fields');
-    if(el) el.classList.remove('show');
-  });
-  if(val==='pppoe'){
-    document.getElementById('pppoe_'+sufixo+'_fields')?.classList.add('show');
-  } else if(val==='static'){
-    document.getElementById('static_'+sufixo+'_fields')?.classList.add('show');
-  }
-}
-
-['principal','backup1','backup2'].forEach(s=>{
-  const el = document.getElementById('tipo_'+s);
-  if(!el) return;
-  el.addEventListener('change',function(){ onTipoChange(s, this.value); });
-});
-
-/* ===== QoS TOGGLE ===== */
-document.getElementById('habilitar_qos').addEventListener('change',function(){
-  document.getElementById('qos_fields').classList.toggle('show', this.checked);
-  document.getElementById('stat-qos').textContent = this.checked ? 'Ativo' : 'Opcional';
-});
-
-/* ===== BACKUP-2 ===== */
-let backup2Ativo = false;
-function adicionarBackup2(){
-  document.getElementById('backup2_section').classList.remove('section-hidden');
-  document.getElementById('btn_add_backup2').style.display='none';
-  backup2Ativo = true;
-  document.getElementById('stat-links').textContent = '3';
-}
-function removerBackup2(){
-  document.getElementById('backup2_section').classList.add('section-hidden');
-  document.getElementById('btn_add_backup2').style.display='flex';
-  backup2Ativo = false;
-  document.getElementById('stat-links').textContent = '2';
-  document.querySelectorAll('#backup2_section input, #backup2_section select').forEach(f=>f.value='');
-}
-
-/* ===== VALIDAÇÃO ===== */
-function showErr(msg){
-  const b=document.getElementById('err-box');
-  b.textContent='⚠ '+msg; b.classList.add('show');
-  b.scrollIntoView({behavior:'smooth'});
-}
-function clearErr(){
-  document.getElementById('err-box').classList.remove('show');
-}
-
-function validarIPs(){
-  const ipRe = /^(\d{1,3}\.){3}\d{1,3}$/;
-  const cidrRe = /^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/;
-  const checks = [
-    ['ip_monitor_principal','IP Monitor Principal'],
-    ['ip_monitor_backup1','IP Monitor Backup-1'],
-  ];
-  if(backup2Ativo) checks.push(['ip_monitor_backup2','IP Monitor Backup-2']);
-  for(const [id,label] of checks){
-    const v = getVal(id);
-    if(v && !ipRe.test(v)) return `${label}: endereço IP inválido (${v})`;
-  }
-  const lan = getVal('rede_lan');
-  if(lan && !cidrRe.test(lan)) return 'Rede LAN: formato inválido. Use CIDR ex: 192.168.1.0/24';
-  return null;
-}
-
-function validarInterfaces(){
-  const p = getIface('principal');
-  const b1 = getIface('backup1');
-  const b2 = backup2Ativo ? getIface('backup2') : '';
-  const lanStr = getVal('interfaces_lan');
-  const lanList = lanStr ? lanStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
-
-  if(!p) return 'Selecione a interface do Link Principal';
-  if(!b1) return 'Selecione a interface do Link Backup-1';
-  if(backup2Ativo && !b2) return 'Selecione a interface do Link Backup-2';
-
-  const wanList = [p, b1];
-  if(b2) wanList.push(b2);
-  const dupes = wanList.filter((v,i)=>wanList.indexOf(v)!==i);
-  if(dupes.length) return `Interface "${dupes[0]}" está duplicada entre os links WAN`;
-
-  const conflito = wanList.find(w=>lanList.includes(w));
-  if(conflito) return `Interface "${conflito}" foi usada em WAN e LAN ao mesmo tempo`;
-
-  return null;
-}
-
-/* ===== CALCULAR LAN ===== */
-function calcLAN(rede){
-  try{
-    const [ip,mask] = rede.split('/');
-    const bits = parseInt(mask);
-    const parts = ip.split('.').map(Number);
-    const gw = [...parts]; gw[3]=1;
-    const hosts = Math.pow(2, 32-bits)-2;
-    const rangeStart = [...parts]; rangeStart[3]=10;
-    const rangeEnd = [...parts]; rangeEnd[3]=Math.min(hosts+parts[3]-1, 254);
-    return {
-      gw: gw.join('.'),
-      mask: bits,
-      rangeStart: rangeStart.join('.'),
-      rangeEnd: rangeEnd.join('.'),
-      pool: rede
-    };
-  }catch(e){ return {gw:'192.168.10.1',mask:23,rangeStart:'192.168.10.10',rangeEnd:'192.168.11.254',pool:rede}; }
-}
-
-/* ===== COLETA DADOS LINK ===== */
-function coletarLink(s){
-  return {
-    interface: getIface(s),
-    tipo: getVal('tipo_'+s),
-    vlan: getVal('vlan_'+s),
-    ipMonitor: getVal('ip_monitor_'+s),
-    operadora: getVal('operadora_'+s),
-    usuario: getVal('usuario_pppoe_'+s),
-    senha: getVal('senha_pppoe_'+s),
-    ip: getVal('ip_'+s),
-    gateway: getVal('gateway_'+s),
-  };
-}
-
-/* ===== GERAR VLANS ===== */
-function gerarVlans(links){
-  let c='';
-  const hdr = '/interface vlan';
-  let first = true;
-  links.forEach(({dados,nome})=>{
-    if(dados.vlan){
-      if(first){ c+=hdr; first=false; }
-      c+=`\nadd interface=${dados.interface} name=${dados.interface}.${dados.vlan} vlan-id=${dados.vlan} comment="VLAN-${dados.operadora.toUpperCase()}-${nome}"`;
-    }
-  });
-  return c;
-}
-
-/* ===== GERAR CONFIG LINK ===== */
-function gerarConfigLink(dados, nome, distance){
-  const ifaceReal = dados.vlan ? `${dados.interface}.${dados.vlan}` : dados.interface;
-  const comentario = `${ifaceReal.toUpperCase()}-${dados.operadora.toUpperCase()}-${nome}-${dados.tipo.toUpperCase()}`;
-  let c='';
-  if(dados.tipo==='pppoe'){
-    c+=`\n/ppp profile\nadd change-tcp-mss=yes name=${nome} on-down="/ip route remove [find comment=\\"MONITOR-${nome}\\"]" on-up="/ip route add dst=${dados.ipMonitor} gateway=\\$\\"remote-address\\" scope=10 comment=MONITOR-${nome}\\r"`;
-    c+=`\n/interface pppoe-client\nadd allow=chap,mschap1,mschap2 disabled=no interface=${ifaceReal} name=pppoe-${dados.operadora} password=${dados.senha} profile=${nome} user=${dados.usuario} comment="${comentario}"`;
-  } else if(dados.tipo==='dhcp'){
-    c+=`\n/ip dhcp-client\nadd add-default-route=no interface=${ifaceReal} script="{\\r\\\n    \\n    :if (\\$bound=1) do={\\r\\\n    \\n  /ip route add dst=${dados.ipMonitor} gateway=\\$\\"gateway-address\\" scope=10 comment=MONITOR-${nome}\\r\\\n    \\n    } else={\\r\\\n    \\n  /ip route remove [find comment=\\"MONITOR-${nome}\\"]\\r\\\n    \\n    }\\r\\\n    \\n}\\r\\\n    \\n" comment="${comentario}"`;
-  } else if(dados.tipo==='static'){
-    c+=`\n/ip address\nadd address=${dados.ip} interface=${ifaceReal} comment="${comentario}"`;
-    c+=`\n/ip route\nadd dst-address=${dados.ipMonitor} gateway=${dados.gateway} scope=10 comment=MONITOR-${nome}`;
-  }
-  return c;
-}
-
-/* ===== GERAR NAT ===== */
-function gerarNAT(links){
-  let c='\n/ip firewall nat';
-  links.forEach(({dados})=>{
-    const iface = dados.tipo==='pppoe' ? `pppoe-${dados.operadora}` : (dados.vlan ? `${dados.interface}.${dados.vlan}` : dados.interface);
-    c+=`\nadd action=masquerade chain=srcnat out-interface=${iface} src-address-list=LAN`;
-  });
-  return c;
-}
-
-/* ===== GERAÇÃO PRINCIPAL ===== */
-function gerarConfig(){
-  clearErr();
-
-  const errIface = validarInterfaces();
-  if(errIface){ showErr(errIface); return; }
-
-  const errIP = validarIPs();
-  if(errIP){ showErr(errIP); return; }
-
-  const id = getVal('identificacao') || 'ROUTER';
-  const lan = calcLAN(getVal('rede_lan') || '192.168.10.0/23');
-  const lanInterfaces = getVal('interfaces_lan');
-
-  const principal = coletarLink('principal');
-  const backup1   = coletarLink('backup1');
-  const backup2   = backup2Ativo ? coletarLink('backup2') : null;
-
-  const links = [{dados:principal,nome:'PRINCIPAL'},{dados:backup1,nome:'BACKUP-1'}];
-  if(backup2) links.push({dados:backup2,nome:'BACKUP-2'});
-
-  let c = `# ============================================================
-# RouterForge NOC — Configuracao Gerada Automaticamente
-# Sistema  : ${id}
-# RouterOS : v7+ | Failover com Netwatch
-# Gerado em: ${new Date().toLocaleString('pt-BR')}
-# ============================================================
-
-/ip firewall address-list
-add address=${lan.pool} list=LAN comment="REDE-LAN-${id}"`;
-
-  // VLANs
-  const vlans = gerarVlans(links);
-  if(vlans) c += '\n'+vlans;
-
-  // Config de cada link
-  links.forEach(({dados,nome},i)=>{ c += gerarConfigLink(dados, nome, i+1); });
-
-  // LAN
-  if(lanInterfaces){
-    const ifaces = lanInterfaces.split(',').map(x=>x.trim()).filter(Boolean);
-    c+=`\n\n/ip address\nadd address=${lan.gw}/${lan.mask} interface=${ifaces[0]} comment="LAN-GATEWAY"`;
-    if(ifaces.length>1){
-      c+=`\n\n/interface bridge\nadd name=bridge-lan comment="BRIDGE-LAN"`;
-      c+=`\n/interface bridge port`;
-      ifaces.forEach(iface=>{ c+=`\nadd bridge=bridge-lan interface=${iface}`; });
-    }
-    c+=`\n\n/ip pool\nadd name=dhcp-pool ranges=${lan.rangeStart}-${lan.rangeEnd} comment="POOL-LAN"`;
-    c+=`\n\n/ip dhcp-server\nadd address-pool=dhcp-pool disabled=no interface=${ifaces.length>1?'bridge-lan':ifaces[0]} lease-time=1d name=dhcp-lan`;
-    c+=`\n\n/ip dhcp-server network\nadd address=${lan.pool} dns-server=1.1.1.1,8.8.8.8 gateway=${lan.gw} comment="NET-LAN"`;
-  }
-
-  // Rotas recursivas
-  c+=`\n\n/ip route\nadd check-gateway=ping comment="ROTA-PRINCIPAL" distance=1 gateway=${principal.ipMonitor} target-scope=11`;
-  c+=`\nadd check-gateway=ping comment="ROTA-BACKUP-1" distance=2 gateway=${backup1.ipMonitor} target-scope=11`;
-  if(backup2) c+=`\nadd check-gateway=ping comment="ROTA-BACKUP-2" distance=3 gateway=${backup2.ipMonitor} target-scope=11`;
-
-  // NAT
-  c += gerarNAT(links);
-
-  // Firewall básico
-  c+=`\n\n/ip firewall filter
-add action=accept chain=input connection-state=established,related,untracked comment="ACEITAR-ESTABELECIDO"
-add action=drop chain=input connection-state=invalid comment="BLOQUEAR-INVALIDO"
-add action=accept chain=input in-interface-list=LAN comment="ACEITAR-LAN"
-add action=drop chain=input comment="BLOQUEAR-RESTO"
-add action=fasttrack-connection chain=forward connection-state=established,related hw-offload=yes comment="FASTTRACK"
-add action=accept chain=forward connection-state=established,related,untracked comment="ACEITAR-FWD-ESTABELECIDO"
-add action=drop chain=forward connection-state=invalid comment="BLOQUEAR-FWD-INVALIDO"`;
-
-  // QoS
-  if(document.getElementById('habilitar_qos').checked){
-    const down = getVal('velocidade_down') || '20';
-    const up = getVal('velocidade_up') || '20';
-    c+=`\n\n/queue simple\nadd max-limit=${up}M/${down}M name=QoS-LAN target=${lan.pool} comment="CONTROLE-BANDA-GERAL"`;
-  }
-
-  // Hardening
-  c+=`\n\n/ip service
-set ftp disabled=yes
-set ssh disabled=yes
-set telnet disabled=yes
-set www disabled=yes
-set winbox address=${lan.pool}
-set api disabled=yes
-set api-ssl disabled=yes
-/system clock
-set time-zone-autodetect=no time-zone-name=America/Sao_Paulo
-/system ntp client
-set enabled=yes servers=a.ntp.br,b.ntp.br
-/system identity
-set name=${id}
-/system logging
-add action=disk topics=critical
-add action=disk topics=error
-add action=disk topics=warning
-/system package update
-set channel=long-term`;
-
-  // Netwatch
-  c+=`\n\n/tool netwatch\nadd down-script=":log error \\"LINK-PRINCIPAL DOWN\\"" host=${principal.ipMonitor} type=simple up-script=":log warning \\"LINK-PRINCIPAL UP\\""`;
-  c+=`\nadd down-script=":log error \\"LINK-BACKUP-1 DOWN\\"" host=${backup1.ipMonitor} type=simple up-script=":log warning \\"LINK-BACKUP-1 UP\\""`;
-  if(backup2) c+=`\nadd down-script=":log error \\"LINK-BACKUP-2 DOWN\\"" host=${backup2.ipMonitor} type=simple up-script=":log warning \\"LINK-BACKUP-2 UP\\""`;
-
-  c+=`\n\n# EOF — RouterForge NOC`;
-
-  document.getElementById('configOutput').value = c;
-  document.getElementById('btn_rsc').disabled = false;
-  document.getElementById('btn_txt').disabled = false;
-  document.getElementById('preview-led').classList.add('on');
-}
-
-/* ===== COPY ===== */
-function copyConfig(){
-  const ta = document.getElementById('configOutput');
-  ta.select();
-  try{
-    document.execCommand('copy');
-    const btn = document.querySelector('.btn-copy');
-    btn.textContent='✓ Copiado!';
-    setTimeout(()=>{ btn.textContent='📋 Copiar Script'; },2000);
-  }catch(e){}
-}
-
-/* ===== DOWNLOAD ===== */
-function downloadConfig(type){
-  const config = document.getElementById('configOutput').value;
-  const id = getVal('identificacao') || 'mikrotik';
-  const ext = type==='rsc' ? 'rsc' : 'txt';
-  const mime = type==='rsc' ? 'application/octet-stream' : 'text/plain';
-  const blob = new Blob([config], {type:mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download=`${id}-failover.${ext}`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-/* ===== RESET ===== */
-function limpar(){
-  document.getElementById('configOutput').value='# RouterForge NOC\n# Aguardando dados do formulario...\n# Preencha os campos e clique em [ Gerar Configuracao ]';
-  document.getElementById('preview-led').classList.remove('on');
-  document.getElementById('btn_rsc').disabled=true;
-  document.getElementById('btn_txt').disabled=true;
-  clearErr();
-}
 </script>
 </body>
 </html>
